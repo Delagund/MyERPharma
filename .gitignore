@@ -38,7 +38,7 @@ storage/
 
 
 # Ignorar un archivo específico
-archivo.txt
+test_func.php
 
 # Ignorar todos los archivos de un tipo
 *.log

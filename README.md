@@ -7,24 +7,28 @@ MyERPharma es una solución web monolítica profesional y responsiva diseñada p
 ## 🚀 Características Clave
 
 ### 1. Gestión de Stock por Lotes y Ubicaciones
-*   **Trazabilidad total:** Permite almacenar el mismo producto en múltiples ubicaciones físicas con diferentes números de lote y fechas de vencimiento.
-*   **Movimientos de inventario seguros:** Entradas, salidas y traslados físicos gestionados bajo transacciones seguras de base de datos.
-*   **Prevención de inconsistencias:** Los traslados de stock son operaciones atómicas (`FOR UPDATE`) que evitan condiciones de carrera (*race conditions*) y garantizan que no haya stock negativo.
+
+- **Trazabilidad total:** Permite almacenar el mismo producto en múltiples ubicaciones físicas con diferentes números de lote y fechas de vencimiento.
+- **Movimientos de inventario seguros:** Entradas, salidas y traslados físicos gestionados bajo transacciones seguras de base de datos.
+- **Prevención de inconsistencias:** Los traslados de stock son operaciones atómicas (`FOR UPDATE`) que evitan condiciones de carrera (_race conditions_) y garantizan que no haya stock negativo.
 
 ### 2. Módulo de Logística Inversa (Gestión de Canjes)
-*   **Procesador de Matrices de Canjes:** Importación dinámica de archivos CSV con las políticas mensuales de devoluciones de los laboratorios. El script realiza la limpieza de BOM, codificaciones (soporta ISO-8859-1 y UTF-8) y detecta delimitadores y cabeceras automáticamente.
-*   **Actualizaciones sin Downtime:** La carga de canjes emplea un mecanismo de *swap* atómico en MySQL (`RENAME TABLE`), garantizando consistencia total del sistema durante la importación.
-*   **Alertas Inteligentes de Vencimiento:** El sistema cruza el inventario activo con las reglas cargadas para alertar si un lote califica para "Canje Habilitado" (devolución al laboratorio) o si debe ser clasificado como "Sin Canje (Baja)". Si un producto no está en la matriz, aplica la política estándar de alerta preventiva de 3 meses.
+
+- **Procesador de Matrices de Canjes:** Importación dinámica de archivos CSV con las políticas mensuales de devoluciones de los laboratorios. El script realiza la limpieza de BOM, codificaciones (soporta ISO-8859-1 y UTF-8) y detecta delimitadores y cabeceras automáticamente.
+- **Actualizaciones sin Downtime:** La carga de canjes emplea un mecanismo de _swap_ atómico en MySQL (`RENAME TABLE`), garantizando consistencia total del sistema durante la importación.
+- **Alertas Inteligentes de Vencimiento:** El sistema cruza el inventario activo con las reglas cargadas para alertar si un lote califica para "Canje Habilitado" (devolución al laboratorio) o si debe ser clasificado como "Sin Canje (Baja)". Si un producto no está en la matriz, aplica la política estándar de alerta preventiva de 3 meses.
 
 ### 3. Entrada de Datos de Alto Rendimiento (Escáner de Código de Barras)
-*   **Integración de Lector de Códigos de Barras Físico:** Cuenta con un oyente de eventos de teclado global en JS optimizado para lecturas ultrarrápidas de escáneres.
-*   **Prevención de Errores de Entrada:** Bloquea el comportamiento por defecto de la tecla `Enter` en los inputs de búsqueda para evitar el envío accidental de formularios inconclusos.
-*   **Audio-Feedback en Tiempo Real:** Utiliza la API de Audio de Web (Web Audio API) para emitir señales auditivas diferenciadas (pitido corto de éxito y doble tono grave para alertas o errores), mejorando la velocidad de operación del operario en bodega.
+
+- **Integración de Lector de Códigos de Barras Físico:** Cuenta con un oyente de eventos de teclado global en JS optimizado para lecturas ultrarrápidas de escáneres.
+- **Prevención de Errores de Entrada:** Bloquea el comportamiento por defecto de la tecla `Enter` en los inputs de búsqueda para evitar el envío accidental de formularios inconclusos.
+- **Audio-Feedback en Tiempo Real:** Utiliza la API de Audio de Web (Web Audio API) para emitir señales auditivas diferenciadas (pitido corto de éxito y doble tono grave para alertas o errores), mejorando la velocidad de operación del operario en bodega.
 
 ### 4. Seguridad de Grado Militar y Respaldo Failsafe
-*   **Redundancia de Caja Negra:** Cada movimiento físico de stock (Entradas, Salidas y Traslados) se registra simultáneamente en la base de datos y en un log inalterable en disco local (`backups/kardex.jsonl`), blindado de accesos externos mediante reglas `.htaccess`.
-*   **Respaldos Cifrados AES-256:** Permite a los administradores descargar copias de seguridad completas. La aplicación genera un volcado SQL estructurado en bloques (*chunks* de 500 registros para evitar el desbordamiento de memoria en hostings compartidos), comprime el archivo junto al log secuencial en un ZIP y lo cifra mediante **AES-256-CBC** de manera simétrica, sirviendo un archivo seguro `.zip.enc`.
-*   **Políticas de Autenticación Rigurosas:** Sesiones PHP seguras (`httponly`, `use_strict_mode` y `secure` en producción), regeneración de ID de sesión para evitar *Session Fixation*, protección integrada contra fuerza bruta (bloqueo automático de 30 segundos tras 5 intentos fallidos) y un interceptor de peticiones Fetch para validar tokens CSRF (`X-CSRF-Token`) en todas las solicitudes de modificación.
+
+- **Redundancia de Caja Negra:** Cada movimiento físico de stock (Entradas, Salidas y Traslados) se registra simultáneamente en la base de datos y en un log inalterable en disco local (`backups/kardex.jsonl`), blindado de accesos externos mediante reglas `.htaccess`.
+- **Respaldos Cifrados AES-256:** Permite a los administradores descargar copias de seguridad completas. La aplicación genera un volcado SQL estructurado en bloques (_chunks_ de 500 registros para evitar el desbordamiento de memoria en hostings compartidos), comprime el archivo junto al log secuencial en un ZIP y lo cifra mediante **AES-256-CBC** de manera simétrica, sirviendo un archivo seguro `.zip.enc`.
+- **Políticas de Autenticación Rigurosas:** Sesiones PHP seguras (`httponly`, `use_strict_mode` y `secure` en producción), regeneración de ID de sesión para evitar _Session Fixation_, protección integrada contra fuerza bruta (bloqueo automático de 30 segundos tras 5 intentos fallidos) y un interceptor de peticiones Fetch para validar tokens CSRF (`X-CSRF-Token`) en todas las solicitudes de modificación.
 
 ---
 
@@ -32,12 +36,12 @@ MyERPharma es una solución web monolítica profesional y responsiva diseñada p
 
 El proyecto está diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid) y **SOLID**, priorizando la legibilidad, mantenibilidad y el rendimiento óptimo en servidores de recursos limitados (ej. Hosting Compartido como InfinityFree).
 
-*   **Backend:** PHP (Estructurado, modularizado y seguro).
-*   **Base de Datos:** MySQL (Esquema completamente normalizado e indexado).
-*   **Frontend:**
-    *   **HTML5 & CSS3 Vanilla:** Sistema de diseño moderno desarrollado mediante variables CSS (`:root`), Grid, Flexbox y animaciones personalizadas sin dependencias ni sobrecarga de frameworks como Tailwind.
-    *   **Vanilla JS (ES6+):** Enrutador del lado del cliente (Single Page Application - SPA) que interactúa con la API RESTful interna mediante llamadas asíncronas con la API Fetch.
-*   **Diseño Visual:** Estética premium, dark sidebar con detalles en índigo y slate, diseño mobile-first y soporte de tarjetas expansivas al tacto para optimizar el espacio de las tablas de datos en pantallas de celulares.
+- **Backend:** PHP (Estructurado, modularizado y seguro).
+- **Base de Datos:** MySQL (Esquema completamente normalizado e indexado).
+- **Frontend:**
+  - **HTML5 & CSS3 Vanilla:** Sistema de diseño moderno desarrollado mediante variables CSS (`:root`), Grid, Flexbox y animaciones personalizadas sin dependencias ni sobrecarga de frameworks como Tailwind.
+  - **Vanilla JS (ES6+):** Enrutador del lado del cliente (Single Page Application - SPA) que interactúa con la API RESTful interna mediante llamadas asíncronas con la API Fetch.
+- **Diseño Visual:** Estética premium, dark sidebar con detalles en índigo y slate, diseño mobile-first y soporte de tarjetas expansivas al tacto para optimizar el espacio de las tablas de datos en pantallas de celulares.
 
 ---
 
@@ -102,7 +106,7 @@ erDiagram
     lotes ||--o{ historial_movimientos : "registra"
     productos ||--o{ historial_movimientos : "registra"
     ubicaciones ||--o{ historial_movimientos : "origen/destino"
-    reglas_devolucion ||--o{ productos : "aplica por cod_socofar"
+    productos }o--|| reglas_devolucion : "aplica"
 
     usuarios {
         int id PK
@@ -124,7 +128,7 @@ erDiagram
         int id PK
         int producto_id FK
         string numero_lote
-        date fecha_vencimiento
+        string fecha_vencimiento
     }
     ubicaciones {
         int id PK
@@ -150,7 +154,7 @@ erDiagram
         int ubicacion_destino_id FK
         int tipo_movimiento_id FK
         int cantidad
-        timestamp fecha
+        string fecha
     }
     reglas_devolucion {
         int id PK
@@ -167,29 +171,31 @@ erDiagram
 ## 🔧 Instalación y Configuración
 
 ### Requisitos del Sistema
-*   Servidor web (Apache / Nginx) con PHP 8.1 o superior.
-*   Servidor de base de datos MySQL 5.7 o superior.
-*   Habilitar extensiones PHP: `PDO_MySQL`, `openssl`, `zip`, `mbstring`.
+
+- Servidor web (Apache / Nginx) con PHP 8.1 o superior.
+- Servidor de base de datos MySQL 5.7 o superior.
+- Habilitar extensiones PHP: `PDO_MySQL`, `openssl`, `zip`, `mbstring`.
 
 ### Pasos para el Despliegue Local
+
 1.  **Clonar el repositorio** en la carpeta pública de tu servidor web:
     ```bash
     git clone https://github.com/tu-usuario/MyERPharma.git
     ```
 2.  **Configurar la Base de Datos:**
-    *   Crea una base de datos en tu servidor MySQL (ej. `myerpharma`).
-    *   Importa el esquema inicial y los datos semilla desde:
-        `datos pruebas/database_schema_and_seed.sql`.
+    - Crea una base de datos en tu servidor MySQL (ej. `myerpharma`).
+    - Importa el esquema inicial y los datos semilla desde:
+      `datos pruebas/database_schema_and_seed.sql`.
 3.  **Configurar credenciales de conexión:**
-    *   Edita el archivo [includes/db.php](file:///Users/cristian/Desarrollo/MyERPharma/includes/db.php). El script cuenta con detección inteligente de entornos. Modifica las credenciales de la sección `isLocal` según tu configuración local:
-        ```php
-        if ($isLocal) {
-            define('DB_HOST',    'localhost');
-            define('DB_NAME',    'myerpharma');
-            define('DB_USER',    'root');
-            define('DB_PASS',    'tu_contraseña');
-        }
-        ```
+    - Edita el archivo [includes/db.php](file:///Users/cristian/Desarrollo/MyERPharma/includes/db.php). El script cuenta con detección inteligente de entornos. Modifica las credenciales de la sección `isLocal` según tu configuración local:
+      ```php
+      if ($isLocal) {
+          define('DB_HOST',    'localhost');
+          define('DB_NAME',    'myerpharma');
+          define('DB_USER',    'root');
+          define('DB_PASS',    'tu_contraseña');
+      }
+      ```
 4.  **Iniciar Servidor de Desarrollo:**
     Si utilizas la CLI de PHP:
     ```bash
@@ -198,6 +204,7 @@ erDiagram
     Abre en tu navegador: `http://localhost:8000`.
 
 ### Despliegue en Producción (ej. InfinityFree u otros Hostings Compartidos)
+
 1.  Sube todos los archivos mediante FTP al directorio `htdocs` o `public_html`.
 2.  Importa el script SQL de la base de datos en el PHPMyAdmin de tu panel de hosting.
 3.  Configura las credenciales de producción en la sección `else` del archivo `includes/db.php`.
@@ -205,19 +212,21 @@ erDiagram
 
 > [!IMPORTANT]
 > **Credenciales Iniciales de Acceso:**
-> *   **Usuario:** `admin`
-> *   **Contraseña:** `admin123`
-> *   *⚠️ Se exige cambiar la contraseña inmediatamente tras el primer inicio de sesión desde el módulo "Mi Perfil" para resguardar la seguridad del sistema.*
+>
+> - **Usuario:** `admin`
+> - **Contraseña:** `admin123`
+> - _⚠️ Se exige cambiar la contraseña inmediatamente tras el primer inicio de sesión desde el módulo "Mi Perfil" para resguardar la seguridad del sistema._
 
 ---
 
 ## 🛡️ Convenciones de Desarrollo
 
 Este proyecto sigue estándares rígidos para asegurar que el código sea comprensible por cualquier desarrollador en el futuro:
-*   **Clean Code:** Nombres descriptivos y funciones pequeñas de responsabilidad única.
-*   **Comentarios en Español:** Explicar el *por qué* se toma una decisión técnica y no solo el *qué* hace el bloque de código.
-*   **Evitar Acoplamientos Ocultos:** Mantener el backend (API JSON) completamente desacoplado de la lógica visual del frontend, sirviendo solo datos puros.
-*   **Políticas de Estilos:** Se prohíbe el uso de frameworks CSS externos. Todo ajuste estético debe realizarse bajo las variables del tema de CSS nativo definidas en el archivo [css/style.css](file:///Users/cristian/Desarrollo/MyERPharma/css/style.css).
+
+- **Clean Code:** Nombres descriptivos y funciones pequeñas de responsabilidad única.
+- **Comentarios en Español:** Explicar el _por qué_ se toma una decisión técnica y no solo el _qué_ hace el bloque de código.
+- **Evitar Acoplamientos Ocultos:** Mantener el backend (API JSON) completamente desacoplado de la lógica visual del frontend, sirviendo solo datos puros.
+- **Políticas de Estilos:** Se prohíbe el uso de frameworks CSS externos. Todo ajuste estético debe realizarse bajo las variables del tema de CSS nativo definidas en el archivo [css/style.css](file:///Users/cristian/Desarrollo/MyERPharma/css/style.css).
 
 ---
 

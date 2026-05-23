@@ -1,0 +1,218 @@
+[
+  {
+    "version": "2.4.3",
+    "fecha": "2026-05-23",
+    "titulo": "Corrección de Layout de Tarjetas Móviles — Sin Solapamiento",
+    "descripcion": "Esta versión corrige cuatro bugs de solapamiento y espaciado visual en las tarjetas móviles (≤ 768px) de las tablas de datos, afectando a cinco vistas: Inventario, Expiración, Canjes de Logística, Kardex y Reglas de Logística.",
+    "secciones": [
+      {
+        "categoria": "🐛 Bugs Corregidos",
+        "items": [
+          "**Solapamiento al expandir tarjeta:** La regla genérica `tr.expanded td { width: 100% }` forzaba el ancho de las celdas de la segunda línea (Código + Vencimiento) a bloque completo, generando colisión con los datos detallados desplegados. Se eliminó y se reemplazó por anchos explícitos que permanecen estables en ambos estados.",
+          "**Solapamiento con códigos de 4 dígitos:** La celda 'Código' sin límite de ancho dejaba espacio libre sin reservar para 'Vencimiento', causando desbordamiento e intersección en valores cortos. Corregido con `max-width` proporcionales por tabla.",
+          "**Hueco entre 'Vence:' y su badge:** `flex: 1` en la celda Vencimiento hacía que el contenedor se expandiera mientras el contenido (etiqueta + badge) quedaba a la izquierda. Corregido cambiando a `width: auto`.",
+          "**Etiqueta 'Código:' y valor pegados:** Sin `gap` garantizado entre el pseudo-elemento `::before` y el texto del valor como flex items. Corregido con `column-gap: 0.25rem` en el contenedor `inline-flex`."
+        ]
+      },
+      {
+        "categoria": "🎨 Mejoras de UI Móvil (`css/style.css`, solo ≤ 768px)",
+        "items": [
+          "**Nombre de Producto truncado:** Aplicado `white-space: nowrap; overflow: hidden; text-overflow: ellipsis` para mantener el nombre en una sola línea y preservar la compacidad de la tarjeta.",
+          "**Anchos garantizados en fila 2:** `max-width: 50%` (Inventario/Expiración/Canjes), `max-width: 38%` (Kardex) y `max-width: 35%` (Reglas) en la celda Código, con `margin-right: 0.5rem` como separador visual en reemplazo del eliminado `content: ' | '`.",
+          "**Separadores '|' eliminados:** Los `::after { content: ' | ' }` de las 5 tablas fueron reemplazados por espaciado con `margin-right`, evitando pseudo-contenido frágil.",
+          "**Espaciado interno de etiqueta:** `column-gap: 0.25rem` en las celdas Código para separar correctamente la etiqueta `::before` del valor numérico."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.4.2",
+    "fecha": "2026-05-23",
+    "titulo": "Corrección de Corte en Dropdown de Autocompletado",
+    "descripcion": "Esta versión corrige un problema visual en el que los menús desplegables de autocompletado quedaban recortados al final del contenedor de tarjeta en los formularios de Entrada, Salida y Cambio de Ubicación.",
+    "secciones": [
+      {
+        "categoria": "🎨 Corrección de UI/UX y Estilos",
+        "items": [
+          "**Visibilidad del Autocompletado:** Incorporación de la clase utilitaria `overflow-visible` a los contenedores `.card` en `movimientos.js` para asegurar que el listado de sugerencias no se corte al expandirse verticalmente."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.4.1",
+    "fecha": "2026-05-23",
+    "titulo": "Fase 5: Optimización de UI/UX, JS Modular y Tablas Acordeón Móviles",
+    "descripcion": "Esta versión introduce una optimización profunda de UI/UX, el rediseño adaptativo y responsivo de tablas para móviles en formato de acordeón compacto, la eliminación de estilos en línea mediante clases CSS utilitarias, la deduplicación de consultas y la modularización completa de la base de código JavaScript.",
+    "secciones": [
+      {
+        "categoria": "🎨 Optimización de UI/UX y Estilos",
+        "items": [
+          "**Renovación Cromática:** Nueva paleta de colores moderna basada en Azul Índigo, gris Slate claro y Slate profundo en la barra lateral, cumpliendo con la accesibilidad WCAG AA.",
+          "**Remoción de Fondos Pill:** Eliminación de fondos tipo pill en los códigos de producto y ubicaciones físicas de todas las tablas.",
+          "**Clases CSS Reutilizables:** Migración de estilos inline hacia clases semánticas dedicadas en el archivo de estilo global."
+        ]
+      },
+      {
+        "categoria": "📱 Tablas Móviles de Tipo Acordeón (≤ 768px)",
+        "items": [
+          "**Diseño Compacto y Expandible:** Conversión automática de filas a tarjetas interactivas donde la información secundaria se despliega con un click listener global.",
+          "**Segunda Línea Unificada:** Alineación de datos en formato 'Código | Vence | [Tercer Campo]' con separadores de barra vertical.",
+          "**Alineación de Canjes:** Reubicación de la celda de Ubicación a la segunda línea visible con etiqueta y separador en la vista de canjes."
+        ]
+      },
+      {
+        "categoria": "⚙️ Modularización JS y Deduplicación SQL",
+        "items": [
+          "**Desacoplamiento JS:** Separación del archivo monolítico de Javascript en 8 submódulos independientes por vista.",
+          "**Deduplicación SQL:** Subconsultas con GROUP BY en los endpoints de reportes y reglas de canje para evitar duplicidad de filas por redundancias del CSV."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.3.1",
+    "fecha": "2026-05-22",
+    "titulo": "Fase 5: Actualización Dinámica de Versión y Hardening",
+    "descripcion": "Esta versión introduce la actualización dinámica del número de versión del sistema desde el Changelog, permitiendo a los administradores modificar la versión activa de manera centralizada y segura.",
+    "secciones": [
+      {
+        "categoria": "⚙️ Gestión de Versión Centralizada",
+        "items": [
+          "**Versionado Centralizado (`includes/version.php`):** Transición de la versión de texto estático a un archivo de configuración PHP centralizado.",
+          "**Formulario Dinámico de Versión:** Formulario de un único campo integrado en el panel de Changelog visible únicamente para administradores.",
+          "**Actualización Reactiva del DOM:** Inyección en tiempo real en la barra lateral de la nueva versión del sistema utilizando JavaScript reactivo al guardar con éxito."
+        ]
+      },
+      {
+        "categoria": "🔒 Seguridad y APIs",
+        "items": [
+          "**API de Actualización Segura (`api/update_version.php`):** Control y procesamiento seguro con validación de expresiones regulares (`^\\d+\\.\\d+\\.\\d+$`), validación de sesión (rol admin) y protección de cabeceras contra CSRF."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.3.0",
+    "fecha": "2026-05-21",
+    "titulo": "Fase 4: Historial/Kardex, Changelog y Refinamiento Visual",
+    "descripcion": "Esta versión introduce la bitácora visual y consulta de movimientos (Kardex), la línea de tiempo oficial de actualizaciones (Changelog) administrable, y un exhaustivo refinamiento estético y responsivo en todo el frontend.",
+    "secciones": [
+      {
+        "categoria": "🔄 Historial (Kardex)",
+        "items": [
+          "**API Segura (`api/historial.php`):** Consulta y listado del Kardex exclusivo para administradores, protegiendo el acceso con respuestas `HTTP 403 Forbidden` a roles no permitidos.",
+          "**Filtros Avanzados:** Búsqueda dinámica con debounce (300ms) de productos, clasificación por tipo de movimiento (Entradas, Salidas, Traslados) y rango de fechas.",
+          "**Exportación Filtro-Sensible:** Generación de reporte CSV dinámico que respeta los filtros seleccionados, controlado por un modal interactivo de confirmación."
+        ]
+      },
+      {
+        "categoria": "📋 Changelog (Notas de Versión)",
+        "items": [
+          "**Renderizado Dinámico:** Timeline dinámico de versiones del sistema generado a partir de `assets/release_note.json`.",
+          "**Administración del Timeline:** Cargador exclusivo para administradores conectado con el validador estricto `api/changelog_upload.php` para sobreescribir el JSON del servidor de manera segura."
+        ]
+      },
+      {
+        "categoria": "🎨 Refinamiento Visual y Estilo Premium",
+        "items": [
+          "**Consistencia Visual:** Diseño de formularios del Kardex y del panel Changelog homogeneizados con la estética de Entrada/Salida, incluyendo selectores premium, wrappers `.input-wrapper` e iconos SVG.",
+          "**Selector de Archivos Premium:** Estilos CSS a medida para `input[type=\"file\"].form-input::file-selector-button` adaptados a los colores y radios del sistema.",
+          "**Nuevas Clases de Botones:** Inclusión de clases `.btn-outline` y `.btn-xs` en el CSS global para paginaciones y acciones secundarias ligeras."
+        ]
+      },
+      {
+        "categoria": "📱 Responsividad Avanzada",
+        "items": [
+          "**Ajuste de Celdas:** Solución del encabalgamiento de nombres de productos largos en móviles mediante la clase `.col-producto` (`white-space: normal` y corte automático `word-break: break-word`).",
+          "**Remoción de Doble Tarjeta:** Desactivación de bordes/sombras del contenedor `.card` general que rodea a las tablas responsivas en móviles. El toolbar de filtros y la paginación dinámica se transforman en tarjetas independientes separadas.",
+          "**Pantallas Muy Pequeñas:** Reducción del padding general de la página a `0.5rem` a menos de 480px de ancho para maximizar el área de visualización."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.2.0",
+    "fecha": "2026-05-21",
+    "titulo": "Fase 3: UX, Responsividad y Escáner",
+    "descripcion": "Esta versión completa la capa de experiencia de usuario, adaptando el sistema a flujos de trabajo con lectores físicos de código de barras y pantallas móviles/tablet. Incluye mejoras iterativas basadas en pruebas reales con hardware.",
+    "secciones": [
+      {
+        "categoria": "📱 Responsividad",
+        "items": [
+          "**Tablet (≤ 1024px):** Sidebar colapsable como drawer con botón hamburguesa y overlay de fondo. Umbral de cierre automático ajustado a 1024px. Altura mínima de 48px en todos los controles interactivos.",
+          "**Móvil (≤ 768px):** Tablas `.data-table` convertidas en tarjetas tipo bloque con etiquetas descriptivas inyectadas via CSS `content: attr(data-label)`. Atributos `data-label` añadidos en `js/logistica.js`.",
+          "**Móvil pequeño (≤ 480px):** Grid `.stat-grid` reorganizado en 2 columnas compactas."
+        ]
+      },
+      {
+        "categoria": "🔍 Validación Backend",
+        "items": [
+          "**`api/productos.php`:** Nueva función `checkDuplicateBarcodes()` que valida colisiones de código de barras en `actionCreate` y `actionUpdate`. Devuelve HTTP `422 Unprocessable Entity` con JSON descriptivo ante conflicto."
+        ]
+      },
+      {
+        "categoria": "🔬 Escáner de Código de Barras",
+        "items": [
+          "**Buffer global de teclado:** `initGlobalScannerListener()` detecta ráfagas rápidas (< 50ms) y enruta al handler correcto según `APP_PAGE`. Cede el paso si el foco ya está en un input directo de barcode para evitar doble procesamiento.",
+          "**Anti-rebote `esEscaneoDuplicado()`:** Descarta lecturas idénticas dentro de 400ms (protege contra dobles `\\r\\n` o rebotes físicos). Ajustado desde 800ms original tras pruebas reales con hardware.",
+          "**Feedback acústico (Web Audio API):** Tono agudo 1000Hz/80ms para éxito; tono grave doble (300Hz + 250Hz) para error. Sin dependencias externas."
+        ]
+      },
+      {
+        "categoria": "⚙️ Flujos de Movimiento",
+        "items": [
+          "**Entrada — Multiescaneo:** Primer escaneo selecciona el producto y enfoca `#entrada-lote`. Escaneos sucesivos del mismo código incrementan cantidad `+1` y limpian el campo para el siguiente escaneo sin colisión de texto.",
+          "**Salida / Traslado — Sin autoincremento:** Re-escaneo del producto activo emite tono de éxito sin alterar la cantidad. El operario selecciona la tarjeta de ubicación y digita la cantidad manualmente.",
+          "**Entrada — Confirmación de éxito:** Resumen visible 4 segundos (producto, lote, vencimiento, ubicación, cantidad) en HTML directo antes del reset automático. `alertHTML` no se usa ya que aplica `escapeHtml()` al contenido, destruyendo el HTML del resumen.",
+          "**Entrada — Validaciones individualizadas:** Cada campo requerido genera mensaje de error propio con `scrollIntoView` y foco automático al campo erróneo."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.1.0",
+    "fecha": "2026-05-21",
+    "titulo": "Fase 2: Seguridad y Respaldos Failsafe",
+    "descripcion": "Esta versión introduce mejoras críticas de hardening en la seguridad del sistema y desarrolla un motor redundante y cifrado de respaldos para la base de datos y la bitácora de Kardex.",
+    "secciones": [
+      {
+        "categoria": "🔒 Seguridad y Hardening",
+        "items": [
+          "**Políticas de Sesión Securas:** Configuración automática de cookies de sesión con directivas `httponly` y `use_strict_mode`. Habilitación del flag `secure` de cookies en entornos de producción (HTTPS) para evitar Session Hijacking.",
+          "**Protección CSRF (Cross-Site Request Forgery):** Implementación de tokens de sincronización criptográficos e inyección automática del header `X-CSRF-Token` en todas las llamadas fetch modificadoras mediante interceptor global.",
+          "**Protección contra Fuerza Bruta (Rate Limiting):** Implementación de bloqueo temporal de 30 segundos tras acumular 5 intentos fallidos consecutivos de inicio de sesión con mensajes interactivos en el login."
+        ]
+      },
+      {
+        "categoria": "💾 Módulo de Respaldos",
+        "items": [
+          "**Motor Dinámico de Backups (`api/backup.php`):** Generación dinámica del volcado SQL (DDL + DML) de todas las tablas por lotes de 500 registros. Cifrado simétrico AES-256-CBC de la DB y `kardex.jsonl` con descarga exclusiva para el rol administrador.",
+          "**Herramienta de Descifrado Local (`scratch/decrypt_backup.php`):** Script utilitario CLI para descifrar respaldos `.enc` localmente en la máquina del administrador usando la contraseña simétrica de la aplicación."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.0.0",
+    "fecha": "2026-05-09",
+    "titulo": "Fase 1: Base de Datos y Trazabilidad Kardex",
+    "descripcion": "Esta versión inicializa la reestructuración de la base de datos, asegura transacciones relacionales e implementa la trazabilidad total de stock mediante el sistema híbrido de Kardex.",
+    "secciones": [
+      {
+        "categoria": "🗄️ Base de Datos",
+        "items": [
+          "**Migración a Motor InnoDB:** Conversión de todas las tablas críticas al motor de almacenamiento `InnoDB` para asegurar atomicidad y soporte nativo de llaves foráneas (`FOREIGN KEY`).",
+          "**Nuevas Tablas de Auditoría:** Creación de la tabla `tipo_movimiento` e `historial_movimientos` (Kardex) para auditoría detallada en base de datos.",
+          "**Restricción de Ubicación del Sistema:** Definición y siembra segura de la ubicación `'EXTERIOR'` protegida contra inserción física de stock y con bloqueo en backend y frontend para impedir edición/eliminación."
+        ]
+      },
+      {
+        "categoria": "🔄 Trazabilidad e Inventario",
+        "items": [
+          "**Bitácora Híbrida Kardex Failsafe:** Doble escritura para movimientos: registro transaccional en base de datos e inserción en caliente (append estructurado) en el archivo de texto secuencial local `backups/kardex.jsonl` con bloqueo `flock` y protección de directorio por `.htaccess`."
+        ]
+      }
+    ]
+  }
+]

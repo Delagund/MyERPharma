@@ -1,0 +1,53 @@
+# Ignorar una carpeta específica
+scratch/
+.agents/
+artifacts/
+datos pruebas/
+planes de cambios/
+logs/
+cache/
+tmp/
+temp/
+
+# ========================
+# Archivos del sistema operativo
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# Editores e IDEs
+# ========================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ========================
+# Archivos subidos por usuarios
+# ========================
+uploads/
+storage/
+
+# ========================
+# Backups
+# ========================
+*.bak
+*.backup
+
+
+# Ignorar un archivo específico
+archivo.txt
+
+# Ignorar todos los archivos de un tipo
+*.log
+*.env
+*.jsonl
+*.md
+*.htaccess_old
+.DS_Store
+
+
+
+# Ignorar una carpeta dentro de una subcarpeta

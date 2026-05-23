@@ -1,0 +1,3257 @@
+/* ============================================================
+   MyErPharma — Sistema de Diseño Principal
+   ============================================================ */
+
+/* --- Google Fonts --- */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* --- Variables de Diseño --- */
+:root {
+  /* Paleta Principal (Indigo/Slate/Emerald) */
+  --primary: #4f46e5;
+  --primary-dark: #3730a3;
+  --primary-light: #e0e7ff;
+  --primary-glow: rgba(79, 70, 229, 0.12);
+
+  /* Sidebar */
+  --sidebar-bg: #0f172a;
+  --sidebar-text: #94a3b8;
+  --sidebar-active: #6366f1;
+  --sidebar-hover: rgba(99, 102, 241, 0.08);
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-width: 260px;
+
+  /* Fondo y Superficie */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --border-focus: #6366f1;
+
+  /* Texto */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  /* Estados */
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --info: #3b82f6;
+  --info-bg: rgba(59, 130, 246, 0.1);
+
+  /* Sombras Modernas y Refinadas */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
+
+  /* Tipografía */
+  --font: "Inter", system-ui, -apple-system, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Radios y Espaciado */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Transiciones */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Reset y Base --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+img {
+  max-width: 100%;
+  display: block;
+}
+ul,
+ol {
+  list-style: none;
+}
+
+/* ============================================================
+   LOGIN PAGE
+   ============================================================ */
+
+.login-body {
+  min-height: 100vh;
+  background: var(--sidebar-bg);
+  display: flex;
+  align-items: stretch;
+}
+
+.login-wrapper {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Branding Panel */
+.login-brand {
+  flex: 1;
+  background: linear-gradient(135deg, #0a1628 0%, #0d2144 60%, #0a3356 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 180, 216, 0.12) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.login-brand::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 119, 182, 0.1) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.login-brand-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 380px;
+}
+
+.brand-logo {
+  margin-bottom: 1.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.brand-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.brand-name {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.brand-version {
+  font-size: var(--text-sm);
+  color: var(--primary);
+  font-weight: 600;
+  background: rgba(0, 180, 216, 0.15);
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.brand-tagline {
+  font-size: var(--text-base);
+  color: var(--sidebar-text);
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+}
+
+.brand-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  border-color: rgba(0, 180, 216, 0.3);
+}
+
+.feature-icon {
+  font-size: 1.2rem;
+}
+
+/* Form Panel */
+.login-form-panel {
+  width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg);
+}
+
+.login-form-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-form-header {
+  margin-bottom: 2rem;
+}
+
+.login-form-header h2 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.375rem;
+}
+
+.login-form-header p {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.login-footer-note {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  margin-top: 1.75rem;
+}
+
+/* ============================================================
+   FORMULARIOS
+   ============================================================ */
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.875rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface);
+  transition: var(--transition);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input.has-suffix {
+  padding-right: 2.75rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.875rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+}
+
+/* Inputs con sufijos visibles */
+.input-suffix {
+  position: absolute;
+  right: 0.875rem;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Select */
+.form-select {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface);
+  transition: var(--transition);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  padding-right: 2.5rem;
+}
+
+.form-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Textarea */
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem 0.875rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface);
+  transition: var(--transition);
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+}
+
+.form-textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Hint debajo del input */
+.form-hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 0.375rem;
+}
+
+/* Autocomplete Dropdown */
+.autocomplete-wrapper {
+  position: relative;
+}
+
+.autocomplete-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.autocomplete-results.visible {
+  display: block;
+}
+
+.autocomplete-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+  background: var(--primary-glow);
+}
+
+.autocomplete-item-code {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.125rem;
+}
+
+.autocomplete-item-desc {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: var(--transition);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 180, 216, 0.45);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #06d6a0, #05a880);
+  color: white;
+  box-shadow: 0 4px 12px rgba(6, 214, 160, 0.3);
+}
+
+.btn-success:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(6, 214, 160, 0.4);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff6b6b, #e63946);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 0.5rem 0.875rem;
+  font-size: var(--text-xs);
+}
+
+.btn-icon {
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Loading spinner */
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   ALERTAS Y MENSAJES
+   ============================================================ */
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.alert-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+}
+.alert-success {
+  background: var(--success-bg);
+  color: #059669;
+  border: 1px solid rgba(6, 214, 160, 0.25);
+}
+.alert-warning {
+  background: var(--warning-bg);
+  color: #92400e;
+  border: 1px solid rgba(255, 209, 102, 0.3);
+}
+.alert-info {
+  background: var(--info-bg);
+  color: #0369a1;
+  border: 1px solid rgba(72, 202, 228, 0.3);
+}
+
+/* ============================================================
+   LAYOUT DE LA APLICACIÓN
+   ============================================================ */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 200;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--sidebar-border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-title {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.sidebar-subtitle {
+  font-size: var(--text-xs);
+  color: var(--sidebar-text);
+}
+
+.sidebar-version {
+  font-size: 0.75rem;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 2px;
+  margin-bottom: 0px;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.15);
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sidebar-text);
+  padding: 0.75rem 0.75rem 0.375rem;
+  opacity: 0.6;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.875rem;
+  border-radius: var(--radius-md);
+  color: var(--sidebar-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: var(--transition);
+  position: relative;
+}
+
+.nav-item:hover {
+  background: var(--sidebar-hover);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: rgba(0, 180, 216, 0.15);
+  color: var(--sidebar-active);
+}
+
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-item svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+.nav-item.active svg {
+  opacity: 1;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 1rem 0.75rem;
+  border-top: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.user-info:hover {
+  background: var(--sidebar-hover);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #fff;
+}
+
+.user-role {
+  font-size: var(--text-xs);
+  color: var(--sidebar-text);
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  margin-top: 0.5rem;
+  border-radius: var(--radius-md);
+  color: var(--sidebar-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--danger);
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.main-content {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.topbar-menu-btn {
+  display: none;
+  color: var(--text-secondary);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.topbar-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.875rem;
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.page-content {
+  flex: 1;
+  padding: 1.75rem;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card.overflow-visible {
+  overflow: visible;
+}
+
+.card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.card-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* ============================================================
+   STAT CARDS (Dashboard)
+   ============================================================ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.4rem;
+}
+
+.stat-icon.primary {
+  background: var(--primary-glow);
+}
+.stat-icon.success {
+  background: var(--success-bg);
+}
+.stat-icon.warning {
+  background: var(--warning-bg);
+}
+.stat-icon.danger {
+  background: var(--danger-bg);
+}
+
+.stat-body {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* ============================================================
+   TABLAS
+   ============================================================ */
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.875rem 1rem;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr {
+  transition: background 0.15s;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+/* Badges de Estado */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: var(--success-bg);
+  color: #047857;
+}
+.badge-warning {
+  background: var(--warning-bg);
+  color: #92400e;
+}
+.badge-danger {
+  background: var(--danger-bg);
+  color: #b91c1c;
+}
+.badge-info {
+  background: var(--info-bg);
+  color: #0369a1;
+}
+.badge-neutral {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* ============================================================
+   TABLAS: FILTROS Y BÚSQUEDA
+   ============================================================ */
+
+.table-toolbar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input-wrapper .input-icon {
+  left: 0.75rem;
+  color: var(--text-muted);
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem 0.625rem 2.5rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--surface-2);
+  outline: none;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  border-color: var(--border-focus);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.5rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.pagination-info {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.page-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: var(--transition);
+}
+
+.page-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.page-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   MODALES (para selección de ubicaciones, etc.)
+   ============================================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: translateY(20px) scale(0.98);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay.open .modal {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--surface-2);
+  color: var(--danger);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   SIDEBAR OVERLAY (Móvil)
+   ============================================================ */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+}
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+
+.flex {
+  display: flex;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+.gap-4 {
+  gap: 1rem;
+}
+.mt-1 {
+  margin-top: 0.25rem;
+}
+.mt-2 {
+  margin-top: 0.5rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+.text-sm {
+  font-size: var(--text-sm);
+}
+.text-xs {
+  font-size: var(--text-xs);
+}
+.text-muted {
+  color: var(--text-secondary);
+}
+.font-semibold {
+  font-weight: 600;
+}
+.text-danger {
+  color: var(--danger);
+}
+.text-success {
+  color: var(--success);
+}
+.text-right {
+  text-align: right;
+}
+.hidden {
+  display: none !important;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+/* Loader spinner de página */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--text-muted);
+  gap: 0.75rem;
+  font-size: var(--text-sm);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+.empty-state h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.375rem;
+}
+.empty-state p {
+  font-size: var(--text-sm);
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile First
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 260px;
+  }
+
+  .login-brand {
+    display: none;
+  }
+
+  .login-form-panel {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--sidebar-bg);
+    align-items: flex-start;
+    padding-top: 4rem;
+  }
+
+  .login-form-card {
+    max-width: 100%;
+  }
+
+  /* El contenido principal ocupa el 100% de la pantalla */
+  .main-content {
+    margin-left: 0;
+  }
+
+  /* La barra lateral se convierte en un menú deslizante drawer */
+  .sidebar {
+    transform: translateX(calc(-1 * var(--sidebar-width)));
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Overlay de fondo oscuro al abrir el sidebar */
+  .sidebar-overlay {
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Botón hamburguesa visible */
+  .topbar-menu-btn {
+    display: flex;
+  }
+
+  /* Distribución del grid de estadísticas para tablets */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .page-content {
+    padding: 1rem;
+  }
+
+  .topbar {
+    padding: 0 1rem;
+  }
+
+  .table-toolbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .card-header {
+    padding: 1rem;
+  }
+  .card-body {
+    padding: 1rem;
+  }
+
+  /* Clases de utilidad responsivas */
+  .hide-tablet {
+    display: none !important;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Optimización de usabilidad táctil: Altura mínima de 48px para elementos interactivos en tablets y móviles */
+  .btn,
+  .form-input,
+  .form-select,
+  .nav-item,
+  .autocomplete-item {
+    min-height: 48px;
+  }
+
+  /* Ajustes de espaciados internos para elementos con min-height de 48px */
+  .btn {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .form-input,
+  .form-select {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .nav-item {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .autocomplete-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+  }
+
+  /* Limitar altura del dropdown de autocompletar para evitar tapar toda la pantalla y forzar scrollbar */
+  .autocomplete-results {
+    max-height: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Convertir tabla clásica a acordeón de tarjetas responsivas */
+  .data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table th,
+  .data-table td,
+  .data-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  /* Ocultar cabeceras originales */
+  .data-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  /* Cada fila se convierte en una tarjeta interactiva */
+  .data-table tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 2.25rem 0.75rem 1rem !important;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition);
+  }
+
+  .data-table tr:hover {
+    background: var(--surface);
+    border-color: var(--primary-light);
+  }
+
+  /* Chevron de expansión */
+  .data-table tr::after {
+    content: "▼";
+    position: absolute;
+    right: 1rem;
+    top: 0.85rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+    pointer-events: none;
+  }
+
+  .data-table tr.expanded::after {
+    transform: rotate(180deg);
+    color: var(--primary);
+  }
+
+  /* Celas secundarias: Ocultas por defecto */
+  .data-table td {
+    display: none !important;
+    padding: 0.45rem 0.25rem !important;
+    border: none !important;
+    border-top: 1px dashed var(--border) !important;
+    width: 100% !important;
+    min-height: auto !important;
+    background: transparent !important;
+    text-align: right !important;
+    display: none;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-direction: row !important; /* Etiqueta a la izquierda, valor a la derecha */
+    font-size: var(--text-sm);
+    order: 10;
+  }
+
+  /* Mostrar celdas secundarias al expandirse */
+  .data-table tr.expanded td {
+    display: flex !important;
+  }
+
+  /* Celdas principales: Siempre visibles en primer plano */
+  .data-table td[data-label="Código"],
+  .data-table td[data-label="Cod. Socofar"],
+  .data-table td[data-label="Cód. Socofar"],
+  .data-table td[data-label="Producto"],
+  .data-table td[data-label="Descripción"],
+  .data-table td[data-label="Ubicación"],
+  .data-table td[data-label="Ubicación Lote"],
+  .data-table td[data-label="Cantidad"],
+  .data-table td[data-label="Cant."] {
+    display: flex !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    flex-direction: row !important;
+    width: auto !important;
+  }
+
+  /* Ocultar etiquetas ::before para las celdas principales */
+  .data-table td[data-label="Código"]::before,
+  .data-table td[data-label="Cod. Socofar"]::before,
+  .data-table td[data-label="Cód. Socofar"]::before,
+  .data-table td[data-label="Producto"]::before,
+  .data-table td[data-label="Descripción"]::before,
+  .data-table td[data-label="Ubicación"]::before,
+  .data-table td[data-label="Ubicación Lote"]::before,
+  .data-table td[data-label="Cantidad"]::before,
+  .data-table td[data-label="Cant."]::before {
+    display: none !important;
+  }
+
+  /* Jerarquización visual de las celdas principales */
+  .data-table td[data-label="Código"],
+  .data-table td[data-label="Cod. Socofar"],
+  .data-table td[data-label="Cód. Socofar"] {
+    order: 1;
+    align-self: flex-start;
+  }
+
+  .data-table td[data-label="Cantidad"],
+  .data-table td[data-label="Cant."] {
+    order: 2;
+    position: absolute;
+    right: 2.25rem;
+    top: 0.75rem;
+    font-weight: 700;
+  }
+
+  .data-table td[data-label="Producto"],
+  .data-table td[data-label="Descripción"] {
+    order: 3;
+    width: 100% !important;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding: 0.15rem 0 !important;
+  }
+
+  .data-table td[data-label="Ubicación"],
+  .data-table td[data-label="Ubicación Lote"] {
+    order: 4;
+    align-self: flex-start;
+    margin-top: 0.15rem;
+  }
+
+  /* Estructura de etiquetas ::before para celdas detalladas secundarias */
+  .data-table td[data-label]::before {
+    content: attr(data-label) ":";
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: inline-block;
+    text-align: left;
+    margin-right: 0.5rem;
+  }
+
+  /* Centrar estados de carga o filas sin etiquetas */
+  .data-table td:not([data-label]) {
+    display: flex !important;
+    padding: 1rem 0 !important;
+    justify-content: center !important;
+    width: 100% !important;
+    border: none !important;
+  }
+
+  /* Asegurar contenedor de tabla libre de cortes */
+  .table-wrapper {
+    overflow-x: visible;
+    border: none;
+  }
+
+  /* ============================================================
+     Diseño de Tarjetas Especiales para el Kardex (Historial)
+     ============================================================ */
+  #kardex-table tbody tr {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: center !important;
+    position: relative !important;
+    padding: 0.75rem 2.25rem 0.75rem 1rem !important;
+  }
+
+  /* Posición del chevron centrado verticalmente */
+  #kardex-table tbody tr::after {
+    top: 1.25rem !important;
+  }
+
+  /* Primera línea: Producto — una sola línea con truncado */
+  #kardex-table tbody td[data-label="Producto"] {
+    width: 100% !important;
+    order: 1 !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-size: var(--text-sm) !important;
+    padding-right: 3rem !important; /* Evitar solapamiento con la cantidad */
+    /* Truncar en una línea para no desfigurar la tarjeta */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  /* Cantidad en el lateral derecho de la primera línea (fija) */
+  #kardex-table tbody td[data-label="Cant."] {
+    position: absolute !important;
+    right: 2.25rem !important;
+    top: 0.75rem !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    order: 2 !important;
+    display: flex !important;
+    align-items: baseline !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    width: auto !important;
+  }
+  #kardex-table tbody td[data-label="Cant."] strong::after {
+    content: " unid." !important;
+    font-size: var(--text-xs) !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    margin-left: 0.15rem !important;
+  }
+  #kardex-table tbody td[data-label="Cant."]::before {
+    display: none !important;
+  }
+
+  /*
+   * Segunda línea: Cod. Socofar + Vencimiento + Tipo
+   * Anchos proporcionales garantizados para evitar solapamiento:
+   * - Cod. Socofar: máx. 38% con margen derecho como separador visual
+   * - Vencimiento: ocupa el espacio restante (flex: 1)
+   * - Tipo: solo aparece al expandir (order 5), en línea propia si desborda
+   */
+  #kardex-table tbody td[data-label="Cod. Socofar"],
+  #kardex-table tbody td[data-label="Vencimiento"],
+  #kardex-table tbody td[data-label="Tipo"] {
+    display: inline-flex !important;
+    font-size: var(--text-xs) !important;
+    align-items: center !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 0.15rem !important;
+    background: transparent !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Orden visual de la segunda línea: Código -> Vence -> Tipo */
+  #kardex-table tbody td[data-label="Cod. Socofar"] {
+    order: 3 !important;
+    padding-top: 2px !important; /* Ajustar alineación vertical del texto Código */
+    /* Ancho máximo para evitar empujar al Vencimiento fuera de línea */
+    max-width: 38% !important;
+    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+    column-gap: 0.25rem !important; /* Separa la etiqueta "Código:" del valor */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #kardex-table tbody td[data-label="Vencimiento"] {
+    order: 4 !important;
+    width: auto !important; /* Ancho natural: evita el hueco entre "Vence:" y el badge */
+  }
+  #kardex-table tbody td[data-label="Tipo"] {
+    order: 5 !important;
+  }
+
+  /* Ajustar alineación vertical del badge de Vencimiento */
+  #kardex-table tbody td[data-label="Vencimiento"]::before {
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+  #kardex-table tbody td[data-label="Vencimiento"] .badge {
+    padding: 0.15rem 0.5rem !important;
+    margin: 0 0 0 0.25rem !important;
+    line-height: 1 !important;
+    align-self: center !important;
+    display: inline-flex !important;
+  }
+
+  /* Badge y etiqueta de Tipo de movimiento */
+  #kardex-table tbody td[data-label="Tipo"]::before {
+    content: "Tipo: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+  }
+  #kardex-table tbody td[data-label="Tipo"] .badge {
+    padding: 0.15rem 0.5rem !important;
+    margin: 0 0 0 0.25rem !important;
+    line-height: 1 !important;
+    align-self: center !important;
+    display: inline-flex !important;
+  }
+
+  /* Etiquetas de la segunda línea — sin separador " | " */
+  #kardex-table tbody td[data-label="Cod. Socofar"]::before {
+    content: "Código: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    flex-shrink: 0 !important;
+  }
+  /* Separador visual eliminado: se usa margin-right en la celda Cod. Socofar */
+  #kardex-table tbody td[data-label="Cod. Socofar"]::after {
+    display: none !important;
+  }
+  #kardex-table tbody td[data-label="Vencimiento"]::before {
+    content: "Vence: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  /* El separador " | " después de Vencimiento ya no aplica */
+  #kardex-table tbody td[data-label="Vencimiento"]::after {
+    display: none !important;
+  }
+
+  /*
+   * Estado expandido del Kardex:
+   * Las celdas secundarias (Fecha, Usuario, Lote, etc.) pasan de display:none
+   * a display:flex mediante la regla genérica .data-table tr.expanded td.
+   * Las celdas primarias de la fila 2 mantienen sus anchos explícitos
+   * (max-width en Cod. Socofar, flex:1 en Vencimiento) — NO se les cambia width.
+   * La Cantidad mantiene su posición absoluta.
+   */
+  #kardex-table tbody tr.expanded td[data-label="Cant."] {
+    position: absolute !important;
+    right: 2.25rem !important;
+    top: 0.75rem !important;
+    width: auto !important;
+    display: flex !important;
+  }
+
+  /* Asegurar que las celdas secundarias queden en bloque ordenadas abajo y tengan tamaño menor */
+  #kardex-table tbody td[data-label="Fecha"],
+  #kardex-table tbody td[data-label="Usuario"],
+  #kardex-table tbody td[data-label="Lote"],
+  #kardex-table tbody td[data-label="Origen"],
+  #kardex-table tbody td[data-label="Destino"] {
+    order: 10 !important;
+    font-size: var(--text-xs) !important;
+  }
+
+  /* ============================================================
+     Diseño de Tarjetas Especiales para Tablas de Datos
+     (Inventario, Expiración del Dashboard y Canjes de Logística)
+     ============================================================ */
+  #inventario-table tbody tr,
+  #expiry-table tbody tr,
+  #logistica-canjes-table tbody tr {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: center !important;
+    position: relative !important;
+    padding: 0.75rem 2.25rem 0.75rem 1rem !important;
+  }
+
+  /* Posición del chevron centrado verticalmente */
+  #inventario-table tbody tr::after,
+  #expiry-table tbody tr::after,
+  #logistica-canjes-table tbody tr::after {
+    top: 1.25rem !important;
+  }
+
+  /* Primera línea: Producto — una sola línea con truncado */
+  #inventario-table tbody td[data-label="Producto"],
+  #expiry-table tbody td[data-label="Producto"],
+  #logistica-canjes-table tbody td[data-label="Producto"] {
+    width: 100% !important;
+    order: 1 !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-size: var(--text-sm) !important;
+    padding-right: 3rem !important; /* Evitar solapamiento con la cantidad */
+    /* Truncar en una línea para no desfigurar la tarjeta */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  /* Cantidad en el lateral derecho de la primera línea (fija) */
+  #inventario-table tbody td[data-label="Cantidad"],
+  #expiry-table tbody td[data-label="Cantidad"],
+  #logistica-canjes-table tbody td[data-label="Cantidad"] {
+    position: absolute !important;
+    right: 2.25rem !important;
+    top: 0.75rem !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    order: 2 !important;
+    display: flex !important;
+    align-items: baseline !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+    width: auto !important;
+  }
+  #inventario-table tbody td[data-label="Cantidad"] strong::after,
+  #expiry-table tbody td[data-label="Cantidad"] strong::after,
+  #logistica-canjes-table tbody td[data-label="Cantidad"] strong::after {
+    content: " unid." !important;
+    font-size: var(--text-xs) !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    margin-left: 0.15rem !important;
+  }
+  #inventario-table tbody td[data-label="Cantidad"]::before,
+  #expiry-table tbody td[data-label="Cantidad"]::before,
+  #logistica-canjes-table tbody td[data-label="Cantidad"]::before {
+    display: none !important;
+  }
+
+  /*
+   * Segunda línea: Código + Vencimiento/Vencimiento Lote
+   * Anchos garantizados para evitar solapamiento en iPhone 12 (390px):
+   * - Código: máx. 50% con margen derecho como separador visual
+   * - Vencimiento: ocupa el espacio restante (flex: 1)
+   */
+  #inventario-table tbody td[data-label="Código"],
+  #inventario-table tbody td[data-label="Vencimiento"],
+  #expiry-table tbody td[data-label="Código"],
+  #expiry-table tbody td[data-label="Vencimiento"],
+  #logistica-canjes-table tbody td[data-label="Código"],
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"] {
+    display: inline-flex !important;
+    font-size: var(--text-xs) !important;
+    align-items: center !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 0.15rem !important;
+    background: transparent !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Tercera línea dedicada: Ubicación y Alerta (ancho completo para evitar superposiciones) */
+  #inventario-table tbody td[data-label="Ubicación"],
+  #expiry-table tbody td[data-label="Ubicación"],
+  #logistica-canjes-table tbody td[data-label="Tipo de Alerta"],
+  #logistica-canjes-table tbody td[data-label="Ubicación"] {
+    display: flex !important;
+    width: 100% !important;
+    font-size: var(--text-xs) !important;
+    align-items: center !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 0.35rem !important;
+    background: transparent !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Orden visual de la segunda línea: Código -> Vence -> Ubicación / Alerta */
+  #inventario-table tbody td[data-label="Código"],
+  #expiry-table tbody td[data-label="Código"],
+  #logistica-canjes-table tbody td[data-label="Código"] {
+    order: 3 !important;
+    padding-top: 2px !important; /* Ajustar alineación vertical del texto Código */
+    /* Ancho máximo para evitar empujar al Vencimiento fuera de línea */
+    max-width: 50% !important;
+    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+    column-gap: 0.5rem !important; /* Separa la etiqueta "Código:" del valor */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #inventario-table tbody td[data-label="Vencimiento"],
+  #expiry-table tbody td[data-label="Vencimiento"],
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"] {
+    order: 4 !important;
+    width: auto !important; /* Ancho natural: evita el hueco entre "Vence:" y el badge */
+  }
+  #inventario-table tbody td[data-label="Ubicación"],
+  #expiry-table tbody td[data-label="Ubicación"],
+  #logistica-canjes-table tbody td[data-label="Tipo de Alerta"] {
+    order: 5 !important;
+  }
+  #logistica-canjes-table tbody td[data-label="Ubicación"] {
+    order: 6 !important;
+  }
+
+  /* Ajustar alineación vertical de badges */
+  #inventario-table tbody td[data-label="Vencimiento"]::before,
+  #expiry-table tbody td[data-label="Vencimiento"]::before,
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"]::before {
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  #inventario-table tbody td[data-label="Vencimiento"] .badge,
+  #expiry-table tbody td[data-label="Vencimiento"] .badge,
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"] .badge,
+  #logistica-canjes-table tbody td[data-label="Tipo de Alerta"] .badge {
+    padding: 0.15rem 0.5rem !important;
+    margin: 0 0 0 0.25rem !important;
+    line-height: 1 !important;
+    align-self: center !important;
+    display: inline-flex !important;
+  }
+
+  /* Asegurar que el badge de Ubicación no tenga fondo ni paddings heredados */
+  #inventario-table tbody td[data-label="Ubicación"] .badge,
+  #expiry-table tbody td[data-label="Ubicación"] .badge {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    line-height: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Etiquetas para la segunda y tercera línea — sin separador " | " */
+  #inventario-table tbody td[data-label="Código"]::before,
+  #expiry-table tbody td[data-label="Código"]::before,
+  #logistica-canjes-table tbody td[data-label="Código"]::before {
+    content: "Código: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    flex-shrink: 0 !important;
+  }
+  /* Separador " | " eliminado: se usa margin-right en la celda Código */
+  #inventario-table tbody td[data-label="Código"]::after,
+  #expiry-table tbody td[data-label="Código"]::after,
+  #logistica-canjes-table tbody td[data-label="Código"]::after {
+    display: none !important;
+  }
+  #inventario-table tbody td[data-label="Vencimiento"]::before,
+  #expiry-table tbody td[data-label="Vencimiento"]::before,
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"]::before {
+    content: "Vence: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  #inventario-table tbody td[data-label="Vencimiento"]::after,
+  #expiry-table tbody td[data-label="Vencimiento"]::after,
+  #logistica-canjes-table tbody td[data-label="Vencimiento Lote"]::after {
+    display: none !important;
+  }
+  #inventario-table tbody td[data-label="Ubicación"]::before,
+  #expiry-table tbody td[data-label="Ubicación"]::before,
+  #logistica-canjes-table tbody td[data-label="Ubicación"]::before {
+    content: "Ubicación: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    margin-right: 0.25rem !important;
+    white-space: nowrap !important;
+  }
+  #logistica-canjes-table tbody td[data-label="Tipo de Alerta"]::before {
+    content: "Alerta: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    margin-right: 0.25rem !important;
+    white-space: nowrap !important;
+  }
+  #logistica-canjes-table tbody td[data-label="Tipo de Alerta"]::after {
+    display: none !important;
+  }
+
+  /*
+   * Estado expandido de Inventario / Expiración / Canjes:
+   * Las celdas secundarias (Lote, Estado, etc.) pasan de display:none
+   * a display:flex mediante la regla genérica .data-table tr.expanded td.
+   * Las celdas primarias de la fila 2 (Código, Vencimiento) mantienen
+   * sus anchos explícitos — NO se les cambia width al expandir.
+   * La Cantidad y la Ubicación mantienen su posición/ancho propio.
+   */
+  #inventario-table tbody tr.expanded td[data-label="Cantidad"],
+  #expiry-table tbody tr.expanded td[data-label="Cantidad"],
+  #logistica-canjes-table tbody tr.expanded td[data-label="Cantidad"] {
+    position: absolute !important;
+    right: 2.25rem !important;
+    top: 0.75rem !important;
+    width: auto !important;
+    display: flex !important;
+  }
+  /* La Ubicación y Tipo de Alerta mantienen su ancho completo al expandir */
+  #inventario-table tbody tr.expanded td[data-label="Ubicación"],
+  #expiry-table tbody tr.expanded td[data-label="Ubicación"],
+  #logistica-canjes-table tbody tr.expanded td[data-label="Tipo de Alerta"],
+  #logistica-canjes-table tbody tr.expanded td[data-label="Ubicación"] {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  /* Asegurar que las celdas secundarias queden en bloque ordenadas abajo y tengan tamaño menor */
+  #inventario-table tbody td[data-label="Lote"],
+  #inventario-table tbody td[data-label="Estado"],
+  #expiry-table tbody td[data-label="Lote"],
+  #logistica-canjes-table tbody td[data-label="Lote"] {
+    order: 10 !important;
+    font-size: var(--text-xs) !important;
+  }
+
+  /* ============================================================
+     Diseño de Tarjetas Especiales para Tablas de CRUD y Reglas
+     ============================================================ */
+  #productos-table tbody tr,
+  #ubicaciones-table tbody tr,
+  #logistica-reglas-table tbody tr {
+    display: flex !important;
+    flex-flow: row wrap !important;
+    align-items: center !important;
+    position: relative !important;
+    padding: 0.75rem 2.25rem 0.75rem 1rem !important;
+  }
+
+  #productos-table tbody tr::after,
+  #ubicaciones-table tbody tr::after,
+  #logistica-reglas-table tbody tr::after {
+    top: 1.25rem !important;
+  }
+
+  /* Primera línea: Título — una sola línea con truncado */
+  #productos-table tbody td[data-label="Descripción"],
+  #ubicaciones-table tbody td[data-label="Código"],
+  #logistica-reglas-table tbody td[data-label="Producto"] {
+    width: 100% !important;
+    order: 1 !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    font-size: var(--text-sm) !important;
+    /* Truncar en una línea para no desfigurar la tarjeta */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+  }
+
+  /* Segunda línea: Código (para Productos) */
+  #productos-table tbody td[data-label="Código"] {
+    display: inline-flex !important;
+    width: auto !important;
+    order: 2 !important;
+    font-size: var(--text-xs) !important;
+    color: var(--text-secondary) !important;
+    margin-top: 0.15rem !important;
+  }
+  #productos-table tbody td[data-label="Código"]::before {
+    content: "Código: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+  }
+  #productos-table tbody td[data-label="Código"] .badge {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+  }
+
+  /* Segunda línea: Descripción (para Ubicaciones) */
+  #ubicaciones-table tbody td[data-label="Descripción"] {
+    display: inline-flex !important;
+    width: auto !important;
+    order: 2 !important;
+    font-size: var(--text-xs) !important;
+    color: var(--text-secondary) !important;
+    margin-top: 0.15rem !important;
+  }
+  #ubicaciones-table tbody td[data-label="Descripción"]::before {
+    content: "Descripción: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+  }
+
+  /*
+   * Segunda línea: Código + ¿Aplica Canje? + Mes a Devolver (Reglas)
+   * Anchos proporcionales para evitar solapamiento en iPhone 12 (390px):
+   * - Código: máx. 35% con margen derecho como separador visual
+   * - ¿Aplica Canje?: máx. 35% con margen derecho
+   * - Mes a Devolver: flex:1 para ocupar el espacio restante
+   */
+  #logistica-reglas-table tbody td[data-label="Código"],
+  #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"],
+  #logistica-reglas-table tbody td[data-label="Mes a Devolver"] {
+    display: inline-flex !important;
+    font-size: var(--text-xs) !important;
+    align-items: center !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-top: 0.15rem !important;
+    background: transparent !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+  }
+
+  #logistica-reglas-table tbody td[data-label="Código"] {
+    order: 2 !important;
+    padding-top: 2px !important;
+    max-width: 35% !important;
+    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"] {
+    order: 3 !important;
+    max-width: 35% !important;
+    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+  }
+  #logistica-reglas-table tbody td[data-label="Mes a Devolver"] {
+    order: 4 !important;
+    flex: 1 !important; /* Ocupa el espacio restante sin desbordar */
+  }
+
+  #logistica-reglas-table tbody td[data-label="Código"]::before {
+    content: "Código: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    flex-shrink: 0 !important;
+  }
+  /* Separador " | " eliminado: se usa margin-right en la celda Código */
+  #logistica-reglas-table tbody td[data-label="Código"]::after {
+    display: none !important;
+  }
+  #logistica-reglas-table tbody td[data-label="Código"] .badge {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"]::before {
+    content: "Canje: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    margin-right: 0.25rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+  /* Separador " | " eliminado: se usa margin-right en la celda ¿Aplica Canje? */
+  #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"]::after {
+    display: none !important;
+  }
+  #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"] .badge,
+  #logistica-reglas-table tbody td[data-label="Mes a Devolver"] .badge {
+    padding: 0.15rem 0.5rem !important;
+    margin: 0 0 0 0.25rem !important;
+    line-height: 1 !important;
+    align-self: center !important;
+    display: inline-flex !important;
+  }
+  #logistica-reglas-table tbody td[data-label="Mes a Devolver"]::before {
+    content: "Mes: " !important;
+    display: inline !important;
+    font-weight: 500 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /*
+   * Estado expandido de Productos / Ubicaciones / Reglas:
+   * Las celdas primarias de la fila 2 mantienen sus anchos explícitos.
+   * Solo las celdas secundarias cambian su display via la regla genérica.
+   */
+
+  /* Asegurar que las celdas secundarias queden abajo en bloque */
+  #productos-table tbody td[data-label="Códigos Barra"],
+  #productos-table tbody td[data-label="Acciones"],
+  #ubicaciones-table tbody td[data-label="Acciones"],
+  #logistica-reglas-table tbody td[data-label="Código Barras"] {
+    order: 10 !important;
+    font-size: var(--text-xs) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .stat-card {
+    padding: 0.875rem;
+    gap: 0.75rem;
+  }
+  .stat-value {
+    font-size: var(--text-xl);
+  }
+  .login-form-card {
+    padding: 1.75rem 1.25rem;
+  }
+
+  /* Ajustar tamaño del título para pantallas extremadamente pequeñas */
+  .topbar-title {
+    font-size: var(--text-base);
+  }
+}
+
+/* ============================================================
+   PERFIL Y SEGURIDAD
+   ============================================================ */
+
+.password-strength-meter {
+  height: 4px;
+  width: 100%;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  margin-top: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.password-strength-meter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
+  transition: var(--transition);
+}
+
+.password-strength-meter.strength-1::after {
+  width: 25%;
+  background: var(--danger);
+}
+.password-strength-meter.strength-2::after {
+  width: 50%;
+  background: var(--warning);
+}
+.password-strength-meter.strength-3::after {
+  width: 75%;
+  background: var(--info);
+}
+.password-strength-meter.strength-4::after {
+  width: 100%;
+  background: var(--success);
+}
+
+/* Animación de entrada para alertas */
+@keyframes alertFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alert {
+  animation: alertFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 380px;
+  pointer-events: all;
+  opacity: 0;
+  transform: translateX(calc(100% + 1.5rem));
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+}
+
+.toast.toast-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #064e3b, #065f46);
+  color: #6ee7b7;
+  border-color: rgba(6, 214, 160, 0.3);
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  color: #fca5a5;
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.toast-warning {
+  background: linear-gradient(135deg, #78350f, #92400e);
+  color: #fcd34d;
+  border-color: rgba(255, 209, 102, 0.3);
+}
+
+.toast-info {
+  background: linear-gradient(135deg, #0c4a6e, #075985);
+  color: #7dd3fc;
+  border-color: rgba(72, 202, 228, 0.3);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.toast-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  font-size: 0.75rem;
+  transition: opacity 0.15s;
+  color: inherit;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+@media (max-width: 480px) {
+  #toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
+  .toast {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+}
+/* ============================================================
+   TRASLADO — Estilos Especiales
+   ============================================================ */
+
+.traslado-flow-indicator {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface-2);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  animation: trasladoSlideDown 0.3s ease-out;
+}
+
+@keyframes trasladoSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.traslado-flow-node {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.traslado-flow-node strong {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.traslado-flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* Responsivo para móviles */
+@media (max-width: 480px) {
+  .traslado-flow-indicator {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  .traslado-flow-arrow {
+    transform: rotate(90deg);
+    margin: 0.25rem 0;
+  }
+}
+
+/* ============================================================
+   FASE 4 — Estilos de Historial (Kardex) y Changelog
+   ============================================================ */
+
+/* Enlace inactivo del menú por rol */
+.nav-item-disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  background: transparent !important;
+}
+.nav-item-disabled svg {
+  color: var(--text-muted) !important;
+}
+
+/* Enlace de versión del sidebar */
+.sidebar-version-link {
+  display: inline-flex;
+  align-items: center;
+}
+.sidebar-version-link:hover .sidebar-version {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Chips de Filtros Activos */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-weight: 500;
+  gap: 0.35rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.filter-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: var(--transition);
+}
+.filter-chip-remove:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.btn-clear-filters {
+  font-size: var(--text-xs);
+  color: var(--primary-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+.btn-clear-filters:hover {
+  background: var(--primary-glow);
+  color: var(--primary);
+}
+
+/* Línea de Tiempo del Changelog */
+.changelog-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-top: 1.5rem;
+}
+.changelog-timeline::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+.timeline-dot {
+  position: absolute;
+  left: -23px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+}
+.timeline-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.timeline-version {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.timeline-date {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.timeline-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 0.75rem;
+}
+.timeline-desc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.timeline-change-group {
+  margin-bottom: 1rem;
+}
+.timeline-change-group:last-child {
+  margin-bottom: 0;
+}
+.timeline-category {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+.timeline-items-list {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.timeline-items-list li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+}
+.timeline-items-list li strong {
+  color: var(--text-primary);
+}
+
+/* Modal de Confirmación Moderno */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 22, 40, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+.modal-confirm {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: calc(100% - 2rem);
+  max-width: 450px;
+  padding: 1.5rem;
+  animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-confirm-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+}
+.modal-confirm-body {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+.modal-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   REFINAMIENTO DE COHERENCIA VISUAL (KARDEX & CHANGELOG)
+   ============================================================ */
+
+/* Botones Faltantes (Outline y Extra Pequeño) */
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-outline.btn-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline.btn-primary:hover {
+  background: var(--primary-glow);
+  color: var(--primary-dark);
+}
+
+.btn-xs {
+  padding: 0.25rem 0.5rem;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+  gap: 0.25rem;
+}
+
+/* Selector de Archivo Premium */
+input[type="file"].form-input {
+  padding: 0.45rem 0.875rem 0.45rem 2.75rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+input[type="file"].form-input::file-selector-button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-right: 0.75rem;
+}
+
+input[type="file"].form-input::file-selector-button:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+}
+
+/* Celda de Producto (Escritorio) */
+.data-table td.col-producto {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ajustes de Responsividad en Tablet/Móvil (<= 768px) */
+@media (max-width: 768px) {
+  /* Celda de Producto: Permitir saltos de línea para evitar solapar etiquetas */
+  .data-table td.col-producto {
+    max-width: none !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+    text-align: right !important;
+  }
+
+  /* Desactivar doble marco en tarjetas que contienen tablas */
+  .card:has(.data-table) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .card:has(.data-table) .card-body {
+    padding: 0 !important;
+  }
+
+  .card:has(.data-table) .table-responsive,
+  .card:has(.data-table) .table-wrapper {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Convertir el toolbar de filtros en una tarjeta blanca flotante */
+  .card:has(.data-table) .table-toolbar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+
+  /* Convertir el footer/paginación en una tarjeta blanca flotante */
+  .card:has(.data-table) .card-footer,
+  .card:has(.data-table) .pagination {
+    background: var(--surface);
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-top: 1rem;
+    padding: 1rem !important;
+  }
+}
+
+/* Ajustes de Responsividad Extrema en Móviles Pequeños (<= 480px) */
+@media (max-width: 480px) {
+  .page-content {
+    padding: 0.5rem;
+  }
+
+  .data-table tr {
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .data-table td {
+    padding: 0.5rem 0.35rem 0.5rem 40%;
+    font-size: var(--text-xs);
+  }
+
+  .data-table td[data-label]::before {
+    left: 0.35rem;
+    width: 35%;
+  }
+}
+
+/* ============================================================
+   CLASES COMPONENTES Y UTILERÍAS MODERNIZADAS
+   ============================================================ */
+
+/* Animación de Fundido Suave para Vistas SPA */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-content {
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Contenedores de Formularios Consistentes */
+.card-form-container {
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.card-form-container-sm {
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Distribución de Panel Doble (ej: Ubicaciones, Reportes) */
+.layout-split-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .layout-split-panel {
+    grid-template-columns: 380px 1fr;
+  }
+}
+
+.panel-sidebar {
+  width: 100%;
+}
+
+.panel-content {
+  width: 100%;
+}
+
+/* Tarjetas y Acciones de Filtro / Kardex */
+.filter-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  align-items: end;
+}
+
+/* Alineación de Acciones de Tarjeta y Paginación */
+.card-footer-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+  background: var(--surface-2);
+}
+
+.card-header-bordered {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+/* Cajas Informativas e Indicadores del Lector */
+.info-alert-box {
+  padding: 0.75rem 1rem;
+  background: var(--info-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  color: var(--text-primary);
+}
+
+.success-summary {
+  margin-top: 0.75rem;
+  font-size: var(--text-sm);
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* Tarjetas de Selección de Lotes en Salida/Traslado */
+.lote-selection-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--surface);
+  transition: var(--transition);
+}
+
+.lote-selection-card:hover {
+  border-color: var(--primary-light);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.lote-selection-card input[type="radio"] {
+  accent-color: var(--primary);
+  width: 18px;
+  height: 18px;
+}
+
+/* Micro-utilidades de Maquetación */
+.w-full {
+  width: 100%;
+}
+.flex-1 {
+  flex: 1;
+}
+.hidden {
+  display: none !important;
+}
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.flex-row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.flex-items-center {
+  display: flex;
+  align-items: center;
+}
+.flex-between-center {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.gap-2 {
+  gap: 0.5rem;
+}
+.gap-3 {
+  gap: 0.75rem;
+}
+.gap-4 {
+  gap: 1rem;
+}
+.gap-6 {
+  gap: 1.5rem;
+}
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+.mb-4 {
+  margin-bottom: 1rem !important;
+}
+.mb-6 {
+  margin-bottom: 1.5rem !important;
+}
+.mt-1 {
+  margin-top: 0.25rem !important;
+}
+.mt-3 {
+  margin-top: 0.75rem !important;
+}
+.mt-4 {
+  margin-top: 1rem !important;
+}
+.mt-6 {
+  margin-top: 1.5rem !important;
+}
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-normal {
+  font-weight: 400;
+}
+.text-xs {
+  font-size: var(--text-xs);
+}
+.text-sm {
+  font-size: var(--text-sm);
+}
+.text-lg {
+  font-size: var(--text-lg);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.block {
+  display: block;
+}
+.card-overflow-hidden {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Contenedor del listado de códigos de barra */
+.barcode-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Modificar botones de exportación del historial */
+.btn-export {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  padding: 0 1.25rem;
+}
+
+.btn-action {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inv-select-filter {
+  max-width: 200px;
+  width: 100%;
+}
+
+/* Skeletors de Carga */
+.skeleton-row {
+  height: 20px;
+  width: 100%;
+  margin: 0.25rem 0;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--border) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-pulse 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+  height: 24px;
+  width: 200px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--border) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-pulse 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes loading-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Mejoras en Tarjetas de Estadísticas */
+.stat-card {
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+}
+
+/* Clases utilitarias adicionales para eliminar estilos en línea */
+.col-actions {
+  width: 110px;
+}
+.nowrap {
+  white-space: nowrap !important;
+}
+.italic {
+  font-style: italic;
+}
+.ml-1 {
+  margin-left: 0.25rem !important;
+}
+.p-4 {
+  padding: 1rem !important;
+}
+
+/* Quitar fondo tipo pill de Código/Socofar y Ubicaciones en las tablas */
+.data-table td[data-label="Código"] .badge-info,
+.data-table td[data-label="Código"] .badge-neutral,
+.data-table td[data-label="Cod. Socofar"] .badge-info,
+.data-table td[data-label="Cód. Socofar"] .badge-info,
+.data-table td[data-label="Ubicación"] .badge-neutral,
+.data-table td[data-label="Ubicación Lote"] .badge-neutral,
+.data-table td[data-label="Origen"] .badge-neutral,
+.data-table td[data-label="Destino"] .badge-neutral {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}

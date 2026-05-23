@@ -53,5 +53,6 @@ test_func.php
 *.htaccess_old
 
 # ========================
-# Ignorar una carpeta dentro de una subcarpeta
+# Archivos incluidos pese a restricciones
 # ========================
+!README.md

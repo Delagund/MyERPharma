@@ -1,4 +1,6 @@
+# ========================
 # Ignorar una carpeta específica
+# ========================
 scratch/
 .agents/
 artifacts/
@@ -36,18 +38,20 @@ storage/
 *.bak
 *.backup
 
-
+# ========================
 # Ignorar un archivo específico
+# ========================
 test_func.php
 
+# ========================
 # Ignorar todos los archivos de un tipo
+# ========================
 *.log
 *.env
 *.jsonl
 *.md
 *.htaccess_old
-.DS_Store
 
-
-
+# ========================
 # Ignorar una carpeta dentro de una subcarpeta
+# ========================

@@ -107,22 +107,21 @@ erDiagram
     productos ||--o{ historial_movimientos : "registra"
     ubicaciones ||--o{ historial_movimientos : "origen/destino"
     productos }o--|| reglas_devolucion : "aplica"
-
     usuarios {
         int id PK
-        string username UNIQUE
+        string username
         string password_hash
         string role
     }
     productos {
         int id PK
-        string cod_socofar UNIQUE
+        string cod_socofar
         string descripcion
     }
     codigos_barra {
         int id PK
         int producto_id FK
-        string cod_barra UNIQUE
+        string cod_barra
     }
     lotes {
         int id PK
@@ -132,7 +131,7 @@ erDiagram
     }
     ubicaciones {
         int id PK
-        string codigo UNIQUE
+        string codigo
         string descripcion
     }
     inventario {
@@ -143,7 +142,7 @@ erDiagram
     }
     tipo_movimiento {
         int id PK
-        string nombre UNIQUE
+        string nombre
     }
     historial_movimientos {
         int id PK
@@ -158,7 +157,7 @@ erDiagram
     }
     reglas_devolucion {
         int id PK
-        string cod_socofar INDEX
+        string cod_socofar
         string laboratorio
         boolean tiene_canje
         date mes_vencimiento_devolver

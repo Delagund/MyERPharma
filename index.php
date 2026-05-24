@@ -22,8 +22,8 @@ $pageTitles = [
     'reportes'    => 'Reportes',
     'perfil'      => 'Configuración de Cuenta',
     'logistica'   => 'Logística Inversa',
-    'historial'   => 'Historial de Movimientos (Kardex)',
-    'changelog'   => 'Notas de Versión y Changelog',
+    'historial'   => 'Historial de Movimientos',
+    'changelog'   => 'Notas de Versión',
 ];
 $pageTitle = $pageTitles[$page];
 ?>

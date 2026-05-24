@@ -1737,8 +1737,7 @@ ol {
    * - Tipo: solo aparece al expandir (order 5), en línea propia si desborda
    */
   #kardex-table tbody td[data-label="Cod. Socofar"],
-  #kardex-table tbody td[data-label="Vencimiento"],
-  #kardex-table tbody td[data-label="Tipo"] {
+  #kardex-table tbody td[data-label="Vencimiento"] {
     display: inline-flex !important;
     font-size: var(--text-xs) !important;
     align-items: center !important;
@@ -1766,9 +1765,6 @@ ol {
     order: 4 !important;
     width: auto !important; /* Ancho natural: evita el hueco entre "Vence:" y el badge */
   }
-  #kardex-table tbody td[data-label="Tipo"] {
-    order: 5 !important;
-  }
 
   /* Ajustar alineación vertical del badge de Vencimiento */
   #kardex-table tbody td[data-label="Vencimiento"]::before {
@@ -1783,14 +1779,6 @@ ol {
     display: inline-flex !important;
   }
 
-  /* Badge y etiqueta de Tipo de movimiento */
-  #kardex-table tbody td[data-label="Tipo"]::before {
-    content: "Tipo: " !important;
-    display: inline !important;
-    font-weight: 500 !important;
-    color: var(--text-muted) !important;
-    white-space: nowrap !important;
-  }
   #kardex-table tbody td[data-label="Tipo"] .badge {
     padding: 0.15rem 0.5rem !important;
     margin: 0 0 0 0.25rem !important;
@@ -1845,7 +1833,8 @@ ol {
   #kardex-table tbody td[data-label="Usuario"],
   #kardex-table tbody td[data-label="Lote"],
   #kardex-table tbody td[data-label="Origen"],
-  #kardex-table tbody td[data-label="Destino"] {
+  #kardex-table tbody td[data-label="Destino"],
+  #kardex-table tbody td[data-label="Tipo"] {
     order: 10 !important;
     font-size: var(--text-xs) !important;
   }
@@ -2301,7 +2290,7 @@ ol {
 
 @media (max-width: 480px) {
   .stat-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
   .stat-card {
@@ -2936,6 +2925,76 @@ input[type="file"].form-input::file-selector-button:hover {
   .data-table td[data-label]::before {
     left: 0.35rem;
     width: 35%;
+  }
+
+  /* ── FIX 1: Toolbars apilables (Inventario, Productos) ── */
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-input-wrapper {
+    min-width: 0;
+  }
+  .inv-select-filter {
+    max-width: none;
+  }
+
+  /* ── FIX 2: Card-headers con botones apilables (Logística, Productos) ── */
+  .card-header .flex {
+    width: 100%;
+  }
+  .card-header .flex .btn {
+    flex: 1;
+  }
+
+  /* ── FIX 3: Grid de filtros a 1 columna (Kardex) ── */
+  .filter-form-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .filter-form-grid > * {
+    min-width: 0;
+    width: 100%;
+  }
+  .filter-form-grid .form-input,
+  .filter-form-grid .form-select,
+  .filter-form-grid .input-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  input[type="date"].form-input {
+    padding-left: 0.875rem !important;
+  }
+
+  /* ── FIX 4: Layout split-panel a 1 columna (Ubicaciones) ── */
+  .layout-split-panel {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── FIX 5: Formularios admin flex-row a columna (Changelog) ── */
+  .flex-row-wrap {
+    flex-direction: column;
+  }
+  .btn-action {
+    width: 100%;
+  }
+
+  /* ── FIX 6: Paginación compacta (Inventario, Productos, Ubicaciones) ── */
+  .pagination,
+  .card-footer-action {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .pagination-controls {
+    justify-content: center;
+  }
+  .pagination .flex,
+  .card-footer-action .flex {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
 

@@ -1436,6 +1436,14 @@ ol {
 
   .card-header {
     padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  .card-header .flex {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .card-body {
     padding: 1rem;
@@ -1488,6 +1496,12 @@ ol {
 }
 
 @media (max-width: 768px) {
+  /* Formulario de Subida CSV */
+  #form-upload-canjes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   /* Convertir tabla clásica a acordeón de tarjetas responsivas */
   .data-table,
   .data-table thead,
@@ -2136,6 +2150,7 @@ ol {
     font-size: var(--text-xs) !important;
     color: var(--text-secondary) !important;
     margin-top: 0.15rem !important;
+    gap: 0.25rem !important;
   }
   #productos-table tbody td[data-label="Código"]::before {
     content: "Código: " !important;
@@ -2155,18 +2170,23 @@ ol {
 
   /* Segunda línea: Descripción (para Ubicaciones) */
   #ubicaciones-table tbody td[data-label="Descripción"] {
-    display: inline-flex !important;
-    width: auto !important;
+    display: flex !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important; /* Si el texto envuelve 2 líneas, la etiqueta se mantiene arriba */
     order: 2 !important;
     font-size: var(--text-xs) !important;
     color: var(--text-secondary) !important;
     margin-top: 0.15rem !important;
+    gap: 0.25rem !important;
   }
   #ubicaciones-table tbody td[data-label="Descripción"]::before {
-    content: "Descripción: " !important;
-    display: inline !important;
+    content: "Descripción:" !important;
+    display: block !important;
     font-weight: 500 !important;
     color: var(--text-muted) !important;
+    flex-shrink: 0 !important; /* Evita que la etiqueta se encoja y se superponga */
+    white-space: nowrap !important;
   }
 
   /*
@@ -2193,20 +2213,25 @@ ol {
   #logistica-reglas-table tbody td[data-label="Código"] {
     order: 2 !important;
     padding-top: 2px !important;
-    max-width: 35% !important;
-    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+    max-width: none !important;
+    flex: 0 1 auto !important;
+    margin-right: auto !important; /* Espacio dinámico (resorte flexbox) */
+    gap: 0.25rem !important; /* Asegura espacio entre la etiqueta ::before y el valor */
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
   }
   #logistica-reglas-table tbody td[data-label="¿Aplica Canje?"] {
     order: 3 !important;
-    max-width: 35% !important;
-    margin-right: 0.5rem !important; /* Reemplaza el separador " | " */
+    max-width: none !important;
+    flex: 0 1 auto !important;
+    margin-right: auto !important; /* Espacio dinámico (resorte flexbox) */
+    gap: 0.25rem !important;
   }
   #logistica-reglas-table tbody td[data-label="Mes a Devolver"] {
     order: 4 !important;
-    flex: 1 !important; /* Ocupa el espacio restante sin desbordar */
+    flex: 0 1 auto !important; /* Mide según su tamaño natural */
+    gap: 0.25rem !important;
   }
 
   #logistica-reglas-table tbody td[data-label="Código"]::before {

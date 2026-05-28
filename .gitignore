@@ -55,4 +55,4 @@ test_func.php
 # ========================
 # Archivos incluidos pese a restricciones
 # ========================
-!README.md
+!README.mdcomposer.phar

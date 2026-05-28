@@ -10,6 +10,7 @@ logs/
 cache/
 tmp/
 temp/
+vendor/
 
 # ========================
 # Archivos del sistema operativo
@@ -42,6 +43,9 @@ storage/
 # Ignorar un archivo específico
 # ========================
 test_func.php
+composer.json
+composer.lock
+composer.phar
 
 # ========================
 # Ignorar todos los archivos de un tipo
@@ -55,4 +59,4 @@ test_func.php
 # ========================
 # Archivos incluidos pese a restricciones
 # ========================
-!README.mdcomposer.phar
+!README.md

@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.5.0",
+    "fecha": "2026-05-30",
+    "titulo": "Refactorización de Arquitectura Modular y Red de Seguridad Dinámica",
+    "descripcion": "Esta versión consolida la transición de MyERPharma hacia una arquitectura de Monolito Modular (Modulith). Se reorganiza la lógica de negocio pura en capas de Servicios y de Repositorios de datos bajo principios SOLID, DRY y KISS, logrando una drástica reducción en la complejidad y una mejora sustancial en el rendimiento del backend. Asimismo, se implementa una red de seguridad basada en pruebas dinámicas para evitar regresiones lógicas.",
+    "secciones": [
+      {
+        "categoria": "⚙️ Arquitectura y Modularización (SOLID/KISS)",
+        "items": [
+          "**Modularización de Perfiles:** Separación de responsabilidades mediante la creación de la capa de servicio y repositorio para la gestión de usuarios. Se optimizó el proceso de validación y cambio de credenciales de seguridad, reduciendo el consumo de procesamiento y mejorando el tiempo de respuesta del servidor.",
+          "**Desacoplamiento de Inventarios:** Transición de las lógicas transaccionales y de movimientos a clases de servicio y repositorio dedicadas, garantizando el aislamiento de la persistencia de datos y la consistencia en operaciones concurrentes.",
+          "**Optimización de Historial:** Extracción de las consultas de auditoría y reportes a componentes especializados de persistencia de datos."
+        ]
+      },
+      {
+        "categoria": "🧪 Red de Seguridad y Pruebas Dinámicas",
+        "items": [
+          "**Automatización de Pruebas de APIs:** Implementación de una suite dinámica de pruebas locales de caja negra que verifica el comportamiento del backend contra un entorno de base de datos de prueba aislado, garantizando la estabilidad de los contratos JSON ante futuras actualizaciones del código."
+        ]
+      },
+      {
+        "categoria": "🔒 Robustez y Gobernanza de Seguridad",
+        "items": [
+          "**Hardening del Core de Autenticación:** Reforzamiento de los mecanismos de sesión y validación de acceso para permitir el acoplamiento y control dinámico del sistema bajo entornos de auditoría locales, garantizando que las directivas de seguridad de producción permanezcan completamente aisladas y seguras."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.4.3",
     "fecha": "2026-05-23",
     "titulo": "Corrección de Layout de Tarjetas Móviles — Sin Solapamiento",

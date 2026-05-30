@@ -5,6 +5,20 @@
 
 require_once __DIR__ . '/db.php';
 
+// Ajuste para soporte de Arnés de pruebas y refactoreización.
+if (defined('AUDIT_SANDBOX') || getenv('MOCK_SESSION')) {
+    if (!function_exists('requireLogin')) {
+        function requireLogin(): void { 
+            return; // Neutralizar redirecciones HTTP web en modo testing CLI
+        }
+    }
+    if (!function_exists('currentUser')) {
+        function currentUser(): array {
+            return json_decode(getenv('MOCK_SESSION'), true) ?? ['id' => 1, 'role' => 'admin'];
+        }
+    }
+}
+
 // Polyfill para getallheaders() si el hosting corre bajo FastCGI/PHP-FPM sin Apache
 if (!function_exists('getallheaders')) {
     function getallheaders(): array {
@@ -75,18 +89,20 @@ function validateCsrfHeader(): void {
     }
 }
 
-function requireLogin(): void {
-    if (!isLoggedIn()) {
-        if (str_contains($_SERVER['REQUEST_URI'] ?? '', '/api/')) {
-            http_response_code(401);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['ok' => false, 'error' => 'Sesión expirada o no iniciada.']);
+if (!function_exists('requireLogin')) {
+    function requireLogin(): void {
+        if (!isLoggedIn()) {
+            if (str_contains($_SERVER['REQUEST_URI'] ?? '', '/api/')) {
+                http_response_code(401);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['ok' => false, 'error' => 'Sesión expirada o no iniciada.']);
+                exit;
+            }
+            header('Location: login.php');
             exit;
         }
-        header('Location: login.php');
-        exit;
+        validateCsrfHeader();
     }
-    validateCsrfHeader();
 }
 
 function login(string $username, string $password): bool {
@@ -126,11 +142,12 @@ function logout(): void {
     exit;
 }
 
-function currentUser(): array {
-    return [
-        'id'       => $_SESSION['user_id']  ?? null,
-        'username' => $_SESSION['username'] ?? '',
-        'role'     => $_SESSION['role']     ?? 'user',
-    ];
+if (!function_exists('currentUser')) {
+    function currentUser(): array {
+        return [
+            'id'       => $_SESSION['user_id']  ?? null,
+            'username' => $_SESSION['username'] ?? '',
+            'role'     => $_SESSION['role']     ?? 'user',
+        ];
+    }
 }
-

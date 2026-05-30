@@ -7,7 +7,11 @@
 require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
 
-$action = $_GET['action'] ?? '';
+// 🚀 CARGA GLOBAL DE CAPAS: Disponibles para todo el ciclo de vida de la API
+require_once __DIR__ . '/../includes/InventarioRepository.php';
+require_once __DIR__ . '/../includes/InventarioService.php';
+
+$action = $_GET['action'] ?? ($argv[1] ?? '');
 
 // export no necesita header JSON
 if ($action === 'export') {
@@ -28,94 +32,42 @@ match ($action) {
     default            => jsonError('Acción no reconocida.', 400),
 };
 
-// ================================================================
-//  ENTRADA — Registrar almacenamiento de un lote en una ubicación
-// ================================================================
+// ============================================================================
+//  ENTRADA — Registrar almacenamiento de un lote en una ubicación (Refactorizada)
+// ============================================================================
 function actionEntrada(PDO $db): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { jsonError('Método no permitido.', 405); return; }
     $body = jsonBody();
 
-    $producto_id      = (int)($body['producto_id']      ?? 0);
-    $numero_lote      = trim($body['numero_lote']       ?? '');
-    $fecha_vencimiento = trim($body['fecha_vencimiento'] ?? '');
-    $ubicacion_id     = (int)($body['ubicacion_id']      ?? 0);
-    $cantidad         = (int)($body['cantidad']           ?? 0);
+    $producto_id       = (int)($body['producto_id']       ?? 0);
+    $numero_lote       = trim($body['numero_lote']        ?? '');
+    $fecha_vencimiento = trim($body['fecha_vencimiento']  ?? '');
+    $ubicacion_id      = (int)($body['ubicacion_id']       ?? 0);
+    $cantidad          = (int)($body['cantidad']           ?? 0);
 
-    // Validaciones
-    if (!$producto_id)       { jsonError('Producto inválido.');            return; }
-    if ($numero_lote === '')  { jsonError('Número de lote requerido.');    return; }
-    if (!$fecha_vencimiento)  { jsonError('Fecha de vencimiento requerida.'); return; }
-    if (!$ubicacion_id)       { jsonError('Ubicación requerida.');         return; }
-    if ($ubicacion_id === 1)  { jsonError('No se puede almacenar stock directamente en la ubicación EXTERIOR del sistema.'); return; }
-    if ($cantidad < 1)        { jsonError('La cantidad debe ser mayor a 0.'); return; }
-
-    // Validar fecha
-    $fechaObj = DateTime::createFromFormat('Y-m-d', $fecha_vencimiento);
-    if (!$fechaObj) { jsonError('Formato de fecha inválido. Use YYYY-MM-DD.'); return; }
+    // Inicializar componentes del Monolito Modular
+    $repository = new InventarioRepository($db);
+    $service    = new InventarioService($repository);
 
     try {
-        $db->beginTransaction();
-
-        // 1) Obtener o crear el lote (producto_id + numero_lote = unique)
-        $stmt = $db->prepare("
-            SELECT id FROM lotes
-            WHERE producto_id = ? AND numero_lote = ?
-        ");
-        $stmt->execute([$producto_id, $numero_lote]);
-        $lote = $stmt->fetch();
-
-        if ($lote) {
-            $lote_id = $lote['id'];
-            // Actualizar fecha de vencimiento si el lote ya existe
-            $db->prepare("UPDATE lotes SET fecha_vencimiento = ? WHERE id = ?")
-               ->execute([$fecha_vencimiento, $lote_id]);
-        } else {
-            $db->prepare("
-                INSERT INTO lotes (producto_id, numero_lote, fecha_vencimiento)
-                VALUES (?, ?, ?)
-            ")->execute([$producto_id, $numero_lote, $fecha_vencimiento]);
-            $lote_id = (int) $db->lastInsertId();
-        }
-
-        // 2) Obtener o crear el registro de inventario (lote + ubicación)
-        $stmt = $db->prepare("
-            SELECT id, cantidad FROM inventario
-            WHERE lote_id = ? AND ubicacion_id = ?
-        ");
-        $stmt->execute([$lote_id, $ubicacion_id]);
-        $inv = $stmt->fetch();
-
-        if ($inv) {
-            // Sumar al stock existente
-            $db->prepare("UPDATE inventario SET cantidad = cantidad + ? WHERE id = ?")
-               ->execute([$cantidad, $inv['id']]);
-            $nuevo_stock = $inv['cantidad'] + $cantidad;
-        } else {
-            $db->prepare("
-                INSERT INTO inventario (lote_id, ubicacion_id, cantidad)
-                VALUES (?, ?, ?)
-            ")->execute([$lote_id, $ubicacion_id, $cantidad]);
-            $nuevo_stock = $cantidad;
-        }
-
-        // 3) Registrar movimiento en el historial (Kardex)
-        // Origen: 1 (EXTERIOR), Destino: $ubicacion_id, Tipo: 1 (Entrada)
         $usuario_id = currentUser()['id'];
-        $db->prepare("
-            INSERT INTO historial_movimientos (usuario_id, producto_id, lote_id, ubicacion_origen_id, ubicacion_destino_id, tipo_movimiento_id, cantidad)
-            VALUES (?, ?, ?, 1, ?, 1, ?)
-        ")->execute([$usuario_id, $producto_id, $lote_id, $ubicacion_id, $cantidad]);
 
-        $db->commit();
+        // Invocar la ejecución aislada de lógica de negocio
+        $res = $service->ejecutarEntrada($producto_id, $numero_lote, $fecha_vencimiento, $ubicacion_id, $cantidad, $usuario_id);
 
-        // 4) Registrar en log inalterable en disco (Failsafe)
-        writeKardexFailsafeLog($usuario_id, 'Entrada', $producto_id, $lote_id, 1, $ubicacion_id, $cantidad);
+        // Registrar en log inalterable en disco (Failsafe)
+        writeKardexFailsafeLog($usuario_id, 'Entrada', $producto_id, $res['lote_id'], 1, $ubicacion_id, $cantidad);
 
-        echo json_encode(['ok' => true, 'nuevo_stock' => $nuevo_stock, 'lote_id' => $lote_id]);
+        echo json_encode([
+            'ok'          => true, 
+            'nuevo_stock' => $res['nuevo_stock'], 
+            'lote_id'     => $res['lote_id']
+        ]);
 
-    } catch (PDOException $e) {
-        $db->rollBack();
-        jsonError('Error al registrar entrada: ' . $e->getMessage());
+    } catch (InvalidArgumentException | DomainException $e) {
+        jsonError($e->getMessage(), 422);
+    } catch (Exception $e) {
+        jsonError('Error al registrar la entrada: ' . $e->getMessage(), 500);
     }
 }
 
@@ -401,121 +353,56 @@ function actionExport(PDO $db): void {
     fclose($out);
 }
 
-// ================================================================
-//  TRASLADO — Mover cantidad entre dos ubicaciones (Atómico)
-// ================================================================
+// ============================================================================
+//  TRASLADO — Versión Refactorizada, Modular y Desacoplada (SOLID/KISS)
+// ============================================================================
 function actionTraslado(PDO $db): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') { jsonError('Método no permitido.', 405); return; }
     $body = jsonBody();
+
+    // Instanciar el Monolito Modular de forma nativa e inyectar dependencias
+    $repository = new InventarioRepository($db);
+    $service    = new InventarioService($repository);
 
     $inventario_id        = (int)($body['inventario_id']        ?? 0);
     $ubicacion_destino_id = (int)($body['ubicacion_destino_id'] ?? 0);
     $cantidad             = (int)($body['cantidad']             ?? 0);
 
-    if (!$inventario_id)        { jsonError('Registro de inventario origen inválido.'); return; }
-    if (!$ubicacion_destino_id) { jsonError('Ubicación de destino requerida.');          return; }
-    if ($ubicacion_destino_id === 1) { jsonError('No se puede trasladar stock a la ubicación EXTERIOR del sistema. Para retirar stock, realice una Salida.'); return; }
-    if ($cantidad < 1)          { jsonError('La cantidad debe ser mayor a 0.');        return; }
-
     try {
-        $db->beginTransaction();
-
-        // 1) Obtener y bloquear origen para asegurar stock, incluyendo producto_id
-        $stmt = $db->prepare("
-            SELECT i.lote_id, i.ubicacion_id, i.cantidad, l.producto_id 
-            FROM inventario i 
-            INNER JOIN lotes l ON l.id = i.lote_id
-            WHERE i.id = ? 
-            FOR UPDATE
-        ");
-        $stmt->execute([$inventario_id]);
-        $origen = $stmt->fetch();
-
-        if (!$origen) {
-            $db->rollBack();
-            jsonError('El registro de inventario origen no existe.', 404);
-            return;
-        }
-
-        if ((int)$origen['ubicacion_id'] === 1) {
-            $db->rollBack();
-            jsonError('No se puede realizar traslados desde la ubicación EXTERIOR del sistema.');
-            return;
-        }
-
-        if ($origen['ubicacion_id'] == $ubicacion_destino_id) {
-            $db->rollBack();
-            jsonError('La ubicación de destino debe ser diferente a la de origen.');
-            return;
-        }
-
-        if ($cantidad > $origen['cantidad']) {
-            $db->rollBack();
-            jsonError("Stock insuficiente en origen. Disponible: {$origen['cantidad']} unidades.");
-            return;
-        }
-
-        // 2) Validar que el destino existe en el maestro y que no es la de sistema (ID 1)
-        $stmt = $db->prepare("SELECT id FROM ubicaciones WHERE id = ?");
-        $stmt->execute([$ubicacion_destino_id]);
-        if (!$stmt->fetch()) {
-            $db->rollBack();
-            jsonError('La ubicación de destino no existe.', 404);
-            return;
-        }
-
-        $lote_id = $origen['lote_id'];
-
-        // 3) Procesar Salida Origen
-        $nuevo_stock_origen = $origen['cantidad'] - $cantidad;
-        if ($nuevo_stock_origen === 0) {
-            $db->prepare("DELETE FROM inventario WHERE id = ?")->execute([$inventario_id]);
-        } else {
-            $db->prepare("UPDATE inventario SET cantidad = ? WHERE id = ?")->execute([$nuevo_stock_origen, $inventario_id]);
-        }
-
-        // 4) Procesar Entrada Destino (Lote + Nueva Ubicación)
-        $stmt = $db->prepare("SELECT id, cantidad FROM inventario WHERE lote_id = ? AND ubicacion_id = ? FOR UPDATE");
-        $stmt->execute([$lote_id, $ubicacion_destino_id]);
-        $dest = $stmt->fetch();
-
-        if ($dest) {
-            $db->prepare("UPDATE inventario SET cantidad = cantidad + ? WHERE id = ?")->execute([$cantidad, $dest['id']]);
-            $nuevo_stock_destino = $dest['cantidad'] + $cantidad;
-        } else {
-            $db->prepare("INSERT INTO inventario (lote_id, ubicacion_id, cantidad) VALUES (?, ?, ?)")->execute([$lote_id, $ubicacion_destino_id, $cantidad]);
-            $nuevo_stock_destino = $cantidad;
-        }
-
-        // 5) Registrar en historial_movimientos (Kardex)
-        // Origen: $origen['ubicacion_id'], Destino: $ubicacion_destino_id, Tipo: 3 (Traspaso)
         $usuario_id = currentUser()['id'];
-        $db->prepare("
-            INSERT INTO historial_movimientos (usuario_id, producto_id, lote_id, ubicacion_origen_id, ubicacion_destino_id, tipo_movimiento_id, cantidad)
-            VALUES (?, ?, ?, ?, ?, 3, ?)
-        ")->execute([$usuario_id, $origen['producto_id'], $lote_id, $origen['ubicacion_id'], $ubicacion_destino_id, $cantidad]);
 
-        $db->commit();
+        // Invocar la caja negra de negocio
+        $res = $service->ejecutarTraslado($inventario_id, $ubicacion_destino_id, $cantidad, $usuario_id);
 
-        // 6) Registrar en log inalterable en disco (Failsafe)
-        writeKardexFailsafeLog($usuario_id, 'Traslado', $origen['producto_id'], $lote_id, $origen['ubicacion_id'], $ubicacion_destino_id, $cantidad);
+        // 6) Mantener registro en log inalterable en disco para compatibilidad total (Failsafe)
+        writeKardexFailsafeLog($usuario_id, 'Traslado', $res['producto_id'], $res['lote_id'], $res['ubicacion_origen_id'], $ubicacion_destino_id, $cantidad);
 
+        // Responder con el mismo contrato de salida JSON exacto que espera la SPA
         echo json_encode([
-            'ok' => true,
-            'nuevo_stock_origen'  => $nuevo_stock_origen,
-            'nuevo_stock_destino' => $nuevo_stock_destino,
-            'lote_id'             => $lote_id
+            'ok'                  => true,
+            'nuevo_stock_origen'  => $res['nuevo_stock_origen'],
+            'nuevo_stock_destino' => $res['nuevo_stock_destino'],
+            'lote_id'             => $res['lote_id']
         ]);
 
-    } catch (PDOException $e) {
-        if ($db->inTransaction()) $db->rollBack();
-        jsonError('Error al procesar el traslado: ' . $e->getMessage());
+    } catch (InvalidArgumentException | DomainException $e) {
+        // Capturar errores controlados de validación de negocio (HTTP 422)
+        jsonError($e->getMessage(), 422);
+    } catch (Exception $e) {
+        // Capturar fallas técnicas inesperadas del motor de base de datos (HTTP 500)
+        jsonError('Error interno al procesar el traslado: ' . $e->getMessage(), 500);
     }
 }
 
-// ---- Helpers ----
+// ================================================================
+// HELPERS - Funciones internas de soporte
+// ================================================================
 function jsonBody(): array {
-    return json_decode(file_get_contents('php://input'), true) ?? [];
+    $raw = file_get_contents('php://input');
+    if (empty($raw) && getenv('MOCK_POST_BODY')) {
+        $raw = getenv('MOCK_POST_BODY');
+    }
+    return json_decode($raw, true) ?? [];
 }
 
 function jsonError(string $msg, int $code = 422): void {
@@ -524,10 +411,11 @@ function jsonError(string $msg, int $code = 422): void {
     exit;
 }
 
-/**
- * Escribe un registro secuencial estructurado en un archivo local .jsonl
- * como bitácora de respaldo en tiempo real (Kardex "caja negra").
- */
+// ================================================================
+// KARDEX - Historial de movimientos de inventario
+// Escribe un registro secuencial estructurado en un archivo local .jsonl
+// como bitácora de respaldo en tiempo real (Kardex "caja negra").
+// ================================================================
 function writeKardexFailsafeLog(int $usuario_id, string $tipo, int $producto_id, int $lote_id, int $origen_id, int $destino_id, int $cantidad): void {
     try {
         $dir = __DIR__ . '/../backups';

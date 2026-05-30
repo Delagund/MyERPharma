@@ -160,7 +160,8 @@ function actionCreate(PDO $db): void {
 
         $stmt = $db->prepare("INSERT INTO productos (cod_socofar, descripcion) VALUES (?, ?)");
         $stmt->execute([$cod, $desc]);
-        $productoId = $db->lastInsertId();
+        // Casteamos a entero porque lastInsertId() retorna string|false pero insertBarcodes requiere estrictamente un entero
+        $productoId = (int) $db->lastInsertId();
 
         insertBarcodes($db, $productoId, $body['codigos_barra'] ?? []);
 

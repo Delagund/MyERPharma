@@ -6,10 +6,14 @@
 require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
 
-header('Content-Type: application/json; charset=utf-8');
+// 🚀 CARGA GLOBAL DE CAPAS: Disponibles para todo el ciclo de vida de la API
+require_once __DIR__ . '/../includes/PerfilRepository.php';
+require_once __DIR__ . '/../includes/PerfilService.php';
 
+$action = $_GET['action'] ?? ($argv[1] ?? '');
+
+header('Content-Type: application/json; charset=utf-8');
 $db = getDB();
-$action = $_GET['action'] ?? '';
 
 if ($action === 'change_password') {
     actionChangePassword($db);
@@ -19,6 +23,9 @@ if ($action === 'change_password') {
 
 /**
  * Cambia la contraseña del usuario actualmente logueado.
+ * 
+ * Se encarga de las validaciones a nivel de formulario/UX (campos vacíos y confirmación)
+ * y delega la validación de negocio y persistencia criptográfica en PerfilService.
  */
 function actionChangePassword(PDO $db): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -27,19 +34,13 @@ function actionChangePassword(PDO $db): void {
     }
 
     $body = jsonBody();
-    $passActual = $body['password_actual'] ?? '';
-    $passNueva   = $body['nueva_password']  ?? '';
-    $confirm    = $body['confirmacion']   ?? '';
-    $userId     = $_SESSION['user_id'];
+    $passActual = trim($body['password_actual'] ?? '');
+    $passNueva   = trim($body['nueva_password']  ?? '');
+    $confirm    = trim($body['confirmacion']   ?? '');
 
-    // 1. Validaciones básicas de entrada
-    if (!$passActual || !$passNueva || !$confirm) {
+    // 1. Validaciones a nivel de Formulario (Responsabilidad del Controlador / UX)
+    if ($passActual === '' || $passNueva === '' || $confirm === '') {
         jsonError('Todos los campos son obligatorios.');
-        return;
-    }
-
-    if (strlen($passNueva) < 8) {
-        jsonError('La nueva contraseña debe tener al menos 8 caracteres.');
         return;
     }
 
@@ -48,37 +49,32 @@ function actionChangePassword(PDO $db): void {
         return;
     }
 
-    // 2. Verificar contraseña actual en DB
-    $stmt = $db->prepare("SELECT password_hash FROM usuarios WHERE id = ? LIMIT 1");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch();
+    // Inicializar componentes del Monolito Modular
+    $repository = new PerfilRepository($db);
+    $service    = new PerfilService($repository);
 
-    if (!$user || !password_verify($passActual, $user['password_hash'])) {
-        jsonError('La contraseña actual es incorrecta.');
-        return;
-    }
-
-    // 3. Validar que la nueva no sea igual a la actual
-    if (password_verify($passNueva, $user['password_hash'])) {
-        jsonError('La nueva contraseña no puede ser igual a la anterior.');
-        return;
-    }
-
-    // 4. Actualizar hash
     try {
-        $nuevoHash = password_hash($passNueva, PASSWORD_BCRYPT, ['cost' => 12]);
-        $update = $db->prepare("UPDATE usuarios SET password_hash = ? WHERE id = ?");
-        $update->execute([$nuevoHash, $userId]);
+        // Se utiliza currentUser() en lugar de $_SESSION directamente
+        // para dar soporte a la inyección de sesiones simuladas vía CLI en el arnés.
+        $userId = currentUser()['id'];
+
+        // Se invoca el servicio con firma simplificada (3 argumentos)
+        $service->cambiarContrasena($userId, $passActual, $passNueva);
 
         echo json_encode(['ok' => true, 'message' => 'Contraseña actualizada correctamente.']);
-    } catch (PDOException $e) {
-        jsonError('Error al actualizar la contraseña: ' . $e->getMessage());
+    } catch (InvalidArgumentException | DomainException $e) {
+        jsonError($e->getMessage(), 422);
+    } catch (Exception $e) {
+        jsonError('Error al actualizar la contraseña: ' . $e->getMessage(), 500);
     }
 }
 
 // ---- Helpers ----
 function jsonBody(): array {
     $raw = file_get_contents('php://input');
+    if (empty($raw) && getenv('MOCK_POST_BODY')) {
+        $raw = getenv('MOCK_POST_BODY');
+    }
     return json_decode($raw, true) ?? [];
 }
 

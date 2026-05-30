@@ -36,7 +36,7 @@ MyERPharma es una solución web monolítica profesional y responsiva diseñada p
 
 El proyecto está diseñado bajo la filosofía **KISS** (Keep It Simple, Stupid) y **SOLID**, priorizando la legibilidad, mantenibilidad y el rendimiento óptimo en servidores de recursos limitados (ej. Hosting Compartido como InfinityFree).
 
-- **Backend:** PHP (Estructurado, modularizado y seguro).
+- **Backend:** PHP (Monolito Modular / Modulith). Arquitectura desacoplada bajo principios SOLID en capas de Servicios (lógica de negocio pura y agnóstica) y Repositorios (persistencia relacional InnoDB) para garantizar alta mantenibilidad y baja complejidad ciclomática.
 - **Base de Datos:** MySQL (Esquema completamente normalizado e indexado).
 - **Frontend:**
   - **HTML5 & CSS3 Vanilla:** Sistema de diseño moderno desarrollado mediante variables CSS (`:root`), Grid, Flexbox y animaciones personalizadas sin dependencias ni sobrecarga de frameworks como Tailwind.
@@ -69,7 +69,12 @@ MyERPharma/
 │   └── style.css              # Sistema de diseño, variables CSS y estilos premium
 ├── datos pruebas/             # Datos semilla y esquema SQL
 │   └── database_schema_and_seed.sql
-├── includes/                  # Lógica compartida del core
+├── includes/                  # Lógica compartida del core e infraestructura
+│   ├── HistorialRepository.php # Capa de persistencia y consultas de Kardex
+│   ├── InventarioRepository.php # Operaciones y transacciones de persistencia de stock
+│   ├── InventarioService.php    # Lógica de negocio para movimientos de inventario
+│   ├── PerfilRepository.php     # Persistencia y actualización de credenciales de usuario
+│   ├── PerfilService.php        # Lógica de negocio y validación de perfiles
 │   ├── auth.php               # Control de seguridad, sesiones, intentos fallidos y CSRF
 │   ├── db.php                 # Conexión PDO Singleton (conmutación automática Local/Prod)
 │   └── version.php            # Archivo que almacena la versión actual del sistema
@@ -215,6 +220,24 @@ erDiagram
 > - **Usuario:** `admin`
 > - **Contraseña:** `admin123`
 > - _⚠️ Se exige cambiar la contraseña inmediatamente tras el primer inicio de sesión desde el módulo "Mi Perfil" para resguardar la seguridad del sistema._
+
+---
+
+## 🧪 Gobernanza de Calidad Estática
+
+El proyecto implementa un arnés de control estático local mediante **PHPMD** (PHP Mess Detector) y **PHPCPD** (PHP Copy-Paste Detector) para garantizar la limpieza, legibilidad e integridad de la base de código. Se configuran reglas de auditoría continua basadas en límites estrictos:
+- **Complejidad Ciclomática Máxima:** 10 por método o función.
+- **Complejidad NPath Máxima:** 200 por método o función.
+- **Duplicidad de Código:** Umbral del 0% de código duplicado en la capa de la API y componentes (DRY).
+
+Para ejecutar los análisis estáticos de calidad localmente:
+```bash
+# Auditar reglas de tamaño de código y variables no utilizadas
+vendor/bin/phpmd api,includes text unusedcode,codesize
+
+# Auditar duplicidad de código
+vendor/bin/phpcpd api includes
+```
 
 ---
 

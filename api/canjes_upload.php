@@ -103,13 +103,21 @@ try {
     while (($row = fgetcsv($handle, 0, $delimiter, '"', '\\')) !== false) {
         if (empty(array_filter($row))) continue; // Saltar filas vacías
 
+        // Para evitar errores en la base de datos (utf8mb4), convertimos los strings a UTF-8
+        // si el archivo viene codificado en ISO-8859-1 (muy común en archivos exportados desde Excel).
+        $row = array_map(function($val) {
+            if ($val === null) return null;
+            return mb_check_encoding($val, 'UTF-8') ? $val : mb_convert_encoding($val, 'UTF-8', 'ISO-8859-1');
+        }, $row);
+
         $codigo = isset($row[$idxCodigo]) ? trim($row[$idxCodigo]) : '';
         if ($codigo === '') continue;
 
         $laboratorio = $idxLaboratorio !== -1 && isset($row[$idxLaboratorio]) ? trim($row[$idxLaboratorio]) : null;
         
         $valDevolver = isset($row[$idxDevolver]) ? mb_strtolower(trim($row[$idxDevolver]), 'UTF-8') : '';
-        $tiene_canje = (!empty($valDevolver) && !str_contains($valDevolver, 'sin canje')) ? 1 : 0;
+        // Un producto tiene canje si el valor no está vacío, no es 'no' y no contiene 'sin canje' para evitar falsos positivos
+        $tiene_canje = (!empty($valDevolver) && $valDevolver !== 'no' && !str_contains($valDevolver, 'sin canje')) ? 1 : 0;
 
         $fechaStr = $idxVencimiento !== -1 && isset($row[$idxVencimiento]) ? trim($row[$idxVencimiento]) : '';
         $fechaDb = null;
@@ -124,12 +132,15 @@ try {
                 $fechaDb = $d->format('Y-m-d');
             } else {
                 // Intentar formato "abr-26" o "abr-2026" (Mes español - Año)
+                // Se agregan variaciones como 'sept' y 'set' para evitar fallos cuando el CSV viene con 4 caracteres para septiembre (ej. sept-26).
                 $mesesEs = [
                     'ene' => '01', 'feb' => '02', 'mar' => '03', 'abr' => '04',
                     'may' => '05', 'jun' => '06', 'jul' => '07', 'ago' => '08',
-                    'sep' => '09', 'oct' => '10', 'nov' => '11', 'dic' => '12'
+                    'sep' => '09', 'sept' => '09', 'set' => '09', 'oct' => '10',
+                    'nov' => '11', 'dic' => '12'
                 ];
-                if (preg_match('/^([a-z]{3})-(\d{2,4})$/', $fechaStr, $matches)) {
+                // Se cambia {3} a {3,4} para soportar abreviaciones de mes de 4 caracteres
+                if (preg_match('/^([a-z]{3,4})-(\d{2,4})$/', $fechaStr, $matches)) {
                     $mesTxt = $matches[1];
                     $anioTxt = $matches[2];
                     if (strlen($anioTxt) === 2) {

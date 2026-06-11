@@ -1,5 +1,34 @@
 [
   {
+    "version": "2.5.2",
+    "fecha": "2026-06-11",
+    "titulo": "Soporte de Codificación de Caracteres en Importación de Canjes",
+    "descripcion": "Esta versión introduce soporte robusto de codificación para archivos CSV codificados en ISO-8859-1 (Latin-1), previniendo fallas de importación al procesar celdas con caracteres especiales como tildes o eñes en entornos de producción (utf8mb4).",
+    "secciones": [
+      {
+        "categoria": "🛡️ Robustez y Compatibilidad de Archivos",
+        "items": [
+          "**Sanitización de codificación**: Conversión automática a UTF-8 de todas las celdas del CSV importado, garantizando la inserción segura en la base de datos sin generar excepciones por caracteres especiales (como acentos o eñes) provenientes de Excel."
+        ]
+      }
+    ]
+  },
+  {
+    "version": "2.5.1",
+    "fecha": "2026-06-11",
+    "titulo": "Corrección de Parseo de Fechas y Estado de Canjes en Importación de Matriz",
+    "descripcion": "Esta versión corrige problemas en el procesamiento de la matriz de canjes (.csv), permitiendo el correcto parseo de meses de 4 caracteres (ej. 'sept-26') y evitando falsos positivos que marcaban erróneamente con canje activo a productos sin devolución habilitada.",
+    "secciones": [
+      {
+        "categoria": "🐛 Bugs Corregidos",
+        "items": [
+          "**Corrección de fechas límite**: Se solventó un error que impedía registrar las fechas de vencimiento de la matriz de canjes cuando contenían abreviaciones de mes de 4 caracteres (como 'sept-26'), asegurando que se visualicen correctamente en la aplicación y se disparen las alertas respectivas.",
+          "**Precisión en el estado de canjes**: Se corrigió un falso positivo que catalogaba incorrectamente a los productos sin devolución (marcados con 'NO' o 'Sin Canje' en el CSV) como productos con canje activo en el panel de logística inversa."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.5.0",
     "fecha": "2026-05-30",
     "titulo": "Refactorización de Arquitectura Modular y Red de Seguridad Dinámica",

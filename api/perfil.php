@@ -9,6 +9,7 @@ requireLogin();
 // 🚀 CARGA GLOBAL DE CAPAS: Disponibles para todo el ciclo de vida de la API
 require_once __DIR__ . '/../includes/PerfilRepository.php';
 require_once __DIR__ . '/../includes/PerfilService.php';
+require_once __DIR__ . '/../includes/RequestValidator.php';
 
 $action = $_GET['action'] ?? ($argv[1] ?? '');
 
@@ -34,31 +35,28 @@ function actionChangePassword(PDO $db): void {
     }
 
     $body = jsonBody();
-    $passActual = trim($body['password_actual'] ?? '');
-    $passNueva   = trim($body['nueva_password']  ?? '');
-    $confirm    = trim($body['confirmacion']   ?? '');
 
-    // 1. Validaciones a nivel de Formulario (Responsabilidad del Controlador / UX)
-    if ($passActual === '' || $passNueva === '' || $confirm === '') {
-        jsonError('Todos los campos son obligatorios.');
+    // Validación agnóstica de inputs (controlador)
+    $error = RequestValidator::validate($body, [
+        'password_actual' => ['required' => true, 'label' => 'contraseña actual'],
+        'nueva_password'  => ['required' => true, 'label' => 'nueva contraseña'],
+        'confirmacion'    => ['required' => true, 'label' => 'confirmación', 'matches' => 'nueva_password'],
+    ]);
+
+    if ($error !== null) {
+        jsonError($error);
         return;
     }
 
-    if ($passNueva !== $confirm) {
-        jsonError('La nueva contraseña y la confirmación no coinciden.');
-        return;
-    }
+    $passActual = trim($body['password_actual']);
+    $passNueva  = trim($body['nueva_password']);
 
     // Inicializar componentes del Monolito Modular
     $repository = new PerfilRepository($db);
     $service    = new PerfilService($repository);
 
     try {
-        // Se utiliza currentUser() en lugar de $_SESSION directamente
-        // para dar soporte a la inyección de sesiones simuladas vía CLI en el arnés.
         $userId = currentUser()['id'];
-
-        // Se invoca el servicio con firma simplificada (3 argumentos)
         $service->cambiarContrasena($userId, $passActual, $passNueva);
 
         echo json_encode(['ok' => true, 'message' => 'Contraseña actualizada correctamente.']);

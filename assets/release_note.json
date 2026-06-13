@@ -1,5 +1,26 @@
 [
   {
+    "version": "2.6.0",
+    "fecha": "2026-06-13",
+    "titulo": "Reducción de Complejidad Ciclomática y Validación Agnóstica de Inputs",
+    "descripcion": "Esta versión refactoriza la capa de validación de perfil, extrayendo la lógica de verificación de inputs a un componente reutilizable y declarativo. Se reduce la complejidad ciclomática de la función principal de 11 a 5, se elimina la duplicación de código de validación y se establece una suite de pruebas de regresión para garantizar la estabilidad del contrato JSON.",
+    "secciones": [
+      {
+        "categoria": "⚙️ Arquitectura y Calidad de Código",
+        "items": [
+          "**Validador Agnóstico de Inputs:** Nuevo componente estático reutilizable que valida arrays de datos contra reglas declarativas. Desacopla la validación de sintaxis de la lógica de negocio, permitiendo su aplicación en cualquier endpoint del sistema.",
+          "**Refactorización de `api/perfil.php`:** Reemplazo de la validación manual condicional por una única llamada declarativa. Complejidad ciclomática reducida de **11 a 5** (reducción del 54%)."
+        ]
+      },
+      {
+        "categoria": "🧪 Red de Seguridad y Pruebas",
+        "items": [
+          "**Suite de Pruebas de Regresión (`tests/verify_perfil_logic.php`):** 27 pruebas automatizadas en 3 niveles (sintaxis de controlador, negocio de servicio, integración controlador→service) ejecutables con PHP CLI y SQLite in-memory. Valida el contrato JSON completo: códigos HTTP, mensajes de error y persistencia de datos sin depender de MySQL."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.5.2",
     "fecha": "2026-06-11",
     "titulo": "Soporte de Codificación de Caracteres en Importación de Canjes",

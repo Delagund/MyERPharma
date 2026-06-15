@@ -207,20 +207,6 @@ erDiagram
     ```
     Abre en tu navegador: `http://localhost:8000`.
 
-### Despliegue en Producción (ej. InfinityFree u otros Hostings Compartidos)
-
-1.  Sube todos los archivos mediante FTP al directorio `htdocs` o `public_html`.
-2.  Importa el script SQL de la base de datos en el PHPMyAdmin de tu panel de hosting.
-3.  Configura las credenciales de producción en la sección `else` del archivo `includes/db.php`.
-4.  Asegúrate de que los directorios `backups/` y `assets/` tengan permisos de escritura (`chmod 755` o `777` según la directiva del hosting).
-
-> [!IMPORTANT]
-> **Credenciales Iniciales de Acceso:**
->
-> - **Usuario:** `admin`
-> - **Contraseña:** `admin123`
-> - _⚠️ Se exige cambiar la contraseña inmediatamente tras el primer inicio de sesión desde el módulo "Mi Perfil" para resguardar la seguridad del sistema._
-
 ---
 
 ## 🧪 Gobernanza de Calidad Estática

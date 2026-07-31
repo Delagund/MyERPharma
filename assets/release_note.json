@@ -1,5 +1,19 @@
 [
   {
+    "version": "2.6.1",
+    "fecha": "2026-07-30",
+    "titulo": "Corrección de Selección de Ubicación en Salida y Traslado por Enter/Escáner",
+    "descripcion": "Esta versión corrige un bug en los formularios de Salida y Traslado: al identificar el producto escribiendo el código y presionando Enter (o escaneando el código de barras), la ubicación/lote seleccionada se resaltaba visualmente pero no se registraba, y el sistema volvía a exigir elegir una ubicación. La causa era un renderizado duplicado del listado de ubicaciones entre la vía de autocompletado y la vía de escáner/Enter, cada una con su propio estado, que no se sincronizaba con la validación del envío. Se unificó el renderizado en una única fuente de verdad para ambas vías.",
+    "secciones": [
+      {
+        "categoria": "🐛 Bugs Corregidos",
+        "items": [
+          "**Salida y Traslado — Selección de ubicación vía Enter/escáner:** Se eliminó la duplicación del listado de ubicaciones/lotes entre el autocompletado y el flujo de escáner. Ahora ambas vías comparten el mismo estado de selección, por lo que elegir una ubicación se registra correctamente y el formulario no exige repetirla."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.6.0",
     "fecha": "2026-06-13",
     "titulo": "Reducción de Complejidad Ciclomática y Validación Agnóstica de Inputs",

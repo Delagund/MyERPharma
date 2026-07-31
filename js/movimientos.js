@@ -279,6 +279,9 @@ function resetEntradaForm() {
 
 
 /* ---- SALIDA ---- */
+let salidaInventarioId = null;
+let salidaMaxCantidad  = 0;
+
 function loadSalida() {
     pageContent.innerHTML = `
         <!-- Se agrega 'overflow-visible' para evitar que el dropdown de autocompletado se corte al desplegarse -->
@@ -347,8 +350,9 @@ function initSalidaForm() {
     const codigoInput  = document.getElementById('salida-codigo');
     const acResults    = document.getElementById('salida-ac-results');
     let debounceTimer;
-    let selectedInventarioId = null;
-    let selectedMaxCantidad  = 0;
+
+    salidaInventarioId = null;
+    salidaMaxCantidad  = 0;
 
     codigoInput?.addEventListener('input', () => {
         const q = codigoInput.value.trim();
@@ -388,66 +392,22 @@ function initSalidaForm() {
         if (!e.target.closest('.autocomplete-wrapper')) acResults?.classList.remove('visible');
     });
 
-    async function loadSalidaLotes(productoId) {
-        const lista = document.getElementById('salida-lotes-lista');
-        lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando ubicaciones...</div>';
-        try {
-            const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
-            const data = await res.json();
-
-            if (!data.rows || !data.rows.length) {
-                lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Sin stock</h3><p>Este producto no tiene ubicaciones con stock disponible.</p></div>';
-                return;
-            }
-
-            lista.innerHTML = data.rows.map(r => `
-                <label class="lote-selection-card lote-row">
-                    <input type="radio" name="inventario_sel" value="${r.id}" data-max="${r.cantidad}">
-                    <div class="flex-1">
-                        <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
-                        <div class="text-xs text-secondary">
-                            Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
-                            Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
-                        </div>
-                    </div>
-                    <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
-                </label>`).join('');
-
-            lista.querySelectorAll('input[name="inventario_sel"]').forEach(radio => {
-                radio.addEventListener('change', () => {
-                    selectedInventarioId = radio.value;
-                    selectedMaxCantidad  = parseInt(radio.dataset.max);
-                    document.getElementById('salida-cantidad-section').style.display = 'block';
-                    document.getElementById('salida-stock-hint').textContent = `Disponible: ${selectedMaxCantidad} unidades.`;
-                    document.getElementById('salida-submit').disabled = false;
-                    document.getElementById('salida-cantidad').max = selectedMaxCantidad;
-                    document.getElementById('salida-cantidad')?.focus();
-                    
-                    lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
-                    radio.closest('.lote-row').style.borderColor = 'var(--primary)';
-                });
-            });
-        } catch (e) {
-            lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
-        }
-    }
-
     document.getElementById('salida-form')?.addEventListener('submit', async e => {
         e.preventDefault();
         const feedback  = document.getElementById('salida-feedback');
         const submitBtn = document.getElementById('salida-submit');
         const cantidad  = parseInt(document.getElementById('salida-cantidad').value);
 
-        if (!selectedInventarioId) { feedback.innerHTML = alertHTML('error', 'Selecciona una ubicación/lote.'); return; }
+        if (!salidaInventarioId) { feedback.innerHTML = alertHTML('error', 'Selecciona una ubicación/lote.'); return; }
         if (!cantidad || cantidad < 1) { feedback.innerHTML = alertHTML('error', 'Ingresa una cantidad válida.'); return; }
-        if (cantidad > selectedMaxCantidad) { feedback.innerHTML = alertHTML('error', `La cantidad no puede superar el stock disponible (${selectedMaxCantidad} unid.).`); return; }
+        if (cantidad > salidaMaxCantidad) { feedback.innerHTML = alertHTML('error', `La cantidad no puede superar el stock disponible (${salidaMaxCantidad} unid.).`); return; }
 
         submitBtn.disabled = true;
         try {
             const res  = await fetch('api/inventario.php?action=salida', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inventario_id: selectedInventarioId, cantidad })
+                body: JSON.stringify({ inventario_id: salidaInventarioId, cantidad })
             });
             const data = await res.json();
             if (data.ok) {
@@ -464,8 +424,65 @@ function initSalidaForm() {
     });
 }
 
+async function loadSalidaLotes(productoId) {
+    const lista = document.getElementById('salida-lotes-lista');
+    lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando ubicaciones...</div>';
+    try {
+        const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
+        const data = await res.json();
+
+        if (!data.rows || !data.rows.length) {
+            lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Sin stock</h3><p>Este producto no tiene ubicaciones con stock disponible.</p></div>';
+            return 0;
+        }
+
+        lista.innerHTML = data.rows.map(r => `
+            <label class="lote-selection-card lote-row">
+                <input type="radio" name="inventario_sel" value="${r.id}" data-max="${r.cantidad}">
+                <div class="flex-1">
+                    <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
+                    <div class="text-xs text-secondary">
+                        Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
+                        Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
+                    </div>
+                </div>
+                <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
+            </label>`).join('');
+
+        lista.querySelectorAll('input[name="inventario_sel"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                salidaInventarioId = radio.value;
+                salidaMaxCantidad  = parseInt(radio.dataset.max);
+                document.getElementById('salida-cantidad-section').style.display = 'block';
+                document.getElementById('salida-stock-hint').textContent = `Disponible: ${salidaMaxCantidad} unidades.`;
+                document.getElementById('salida-submit').disabled = false;
+                document.getElementById('salida-cantidad').max = salidaMaxCantidad;
+                document.getElementById('salida-cantidad')?.focus();
+
+                lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
+                radio.closest('.lote-row').style.borderColor = 'var(--primary)';
+            });
+        });
+
+        if (data.rows.length === 1) {
+            const radio = lista.querySelector('input[name="inventario_sel"]');
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change'));
+        }
+
+        return data.rows.length;
+    } catch (e) {
+        lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
+        return 0;
+    }
+}
+
 
 /* ---- TRASLADO ---- */
+let trasladoInventarioId = null;
+let trasladoMaxCantidad  = 0;
+let trasladoDestinoId    = null;
+
 function loadTraslado() {
     pageContent.innerHTML = `
         <!-- Se agrega 'overflow-visible' para evitar que el dropdown de autocompletado se corte al desplegarse -->
@@ -566,9 +583,10 @@ function initTrasladoForm() {
     const destAcResults = document.getElementById('traslado-destino-ac-results');
     
     let debounceTimer;
-    let selectedInventarioId = null;
-    let selectedMaxCantidad  = 0;
-    let selectedDestinoId    = null;
+
+    trasladoInventarioId = null;
+    trasladoMaxCantidad  = 0;
+    trasladoDestinoId    = null;
 
     codigoInput?.addEventListener('input', () => {
         const q = codigoInput.value.trim();
@@ -604,53 +622,6 @@ function initTrasladoForm() {
         });
     }
 
-    async function loadTrasladoLotes(productoId) {
-        const lista = document.getElementById('traslado-lotes-lista');
-        lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando stock...</div>';
-        try {
-            const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
-            const data = await res.json();
-
-            if (!data.rows || !data.rows.length) {
-                lista.innerHTML = '<div class="empty-state"><h3>Sin stock</h3><p>Este producto no tiene stock disponible para trasladar.</p></div>';
-                return;
-            }
-
-            lista.innerHTML = data.rows.map(r => `
-                <label class="lote-selection-card lote-row">
-                    <input type="radio" name="traslado_inv_sel" value="${r.id}" data-max="${r.cantidad}" data-ubicacion="${escapeHtml(r.ubicacion_codigo)}" data-lote="${escapeHtml(r.numero_lote)}">
-                    <div class="flex-1">
-                        <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
-                        <div class="text-xs text-secondary">
-                            Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
-                            Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
-                        </div>
-                    </div>
-                    <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
-                </label>`).join('');
-
-            lista.querySelectorAll('input[name="traslado_inv_sel"]').forEach(radio => {
-                radio.addEventListener('change', () => {
-                    selectedInventarioId = radio.value;
-                    selectedMaxCantidad  = parseInt(radio.dataset.max);
-                    
-                    document.getElementById('traslado-destino-wrapper').style.display = 'block';
-                    document.getElementById('traslado-whitespace-hack')?.remove(); // Cleanup old hack
-                    document.getElementById('traslado-cantidad-section').style.display = 'block';
-                    document.getElementById('traslado-stock-hint').textContent = `Disponible: ${selectedMaxCantidad} unidades.`;
-                    
-                    lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
-                    radio.closest('.lote-row').style.borderColor = 'var(--primary)';
-                    
-                    updateFlow();
-                    validateSubmit();
-                });
-            });
-        } catch (e) {
-            lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
-        }
-    }
-
     destinoInput?.addEventListener('input', () => {
         const q = destinoInput.value.trim();
         clearTimeout(debounceTimer);
@@ -676,7 +647,7 @@ function initTrasladoForm() {
         destAcResults.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
                 destinoInput.value = item.dataset.cod;
-                selectedDestinoId  = item.dataset.id;
+                trasladoDestinoId  = item.dataset.id;
                 destAcResults.classList.remove('visible');
                 updateFlow();
                 validateSubmit();
@@ -685,37 +656,13 @@ function initTrasladoForm() {
         });
     }
 
-    function updateFlow() {
-        const flow = document.getElementById('traslado-flow');
-        const flowOrigenVal = document.getElementById('flow-origen-val');
-        const flowDestinoVal = document.getElementById('flow-destino-val');
-        
-        flow.style.display = 'flex';
-        
-        const radio = document.querySelector('input[name="traslado_inv_sel"]:checked');
-        if (radio) {
-            flowOrigenVal.innerHTML = `${radio.dataset.ubicacion} <span class="text-xs text-muted block mb-1">Lote: ${radio.dataset.lote}</span>`;
-        }
-        
-        if (selectedDestinoId) {
-            flowDestinoVal.textContent = destinoInput.value;
-        } else {
-            flowDestinoVal.textContent = '—';
-        }
-    }
-
-    function validateSubmit() {
-        const submitBtn = document.getElementById('traslado-submit');
-        submitBtn.disabled = !(selectedInventarioId && selectedDestinoId);
-    }
-
     document.getElementById('traslado-form')?.addEventListener('submit', async e => {
         e.preventDefault();
         const feedback = document.getElementById('traslado-feedback');
         const submitBtn = document.getElementById('traslado-submit');
         const cantidad = parseInt(document.getElementById('traslado-cantidad').value);
 
-        if (!selectedInventarioId || !selectedDestinoId) {
+        if (!trasladoInventarioId || !trasladoDestinoId) {
             feedback.innerHTML = alertHTML('error', 'Selecciona origen y destino.');
             return;
         }
@@ -723,8 +670,8 @@ function initTrasladoForm() {
             feedback.innerHTML = alertHTML('error', 'Ingresa una cantidad válida.');
             return;
         }
-        if (cantidad > selectedMaxCantidad) {
-            feedback.innerHTML = alertHTML('error', `La cantidad supera el stock disponible (${selectedMaxCantidad} unid.).`);
+        if (cantidad > trasladoMaxCantidad) {
+            feedback.innerHTML = alertHTML('error', `La cantidad supera el stock disponible (${trasladoMaxCantidad} unid.).`);
             return;
         }
 
@@ -734,8 +681,8 @@ function initTrasladoForm() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    inventario_id: selectedInventarioId,
-                    ubicacion_destino_id: selectedDestinoId,
+                    inventario_id: trasladoInventarioId,
+                    ubicacion_destino_id: trasladoDestinoId,
                     cantidad: cantidad
                 })
             });
@@ -760,4 +707,84 @@ function initTrasladoForm() {
             destAcResults?.classList.remove('visible');
         }
     });
+}
+
+async function loadTrasladoLotes(productoId) {
+    const lista = document.getElementById('traslado-lotes-lista');
+    lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando stock...</div>';
+    try {
+        const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
+        const data = await res.json();
+
+        if (!data.rows || !data.rows.length) {
+            lista.innerHTML = '<div class="empty-state"><h3>Sin stock</h3><p>Este producto no tiene stock disponible para trasladar.</p></div>';
+            return 0;
+        }
+
+        lista.innerHTML = data.rows.map(r => `
+            <label class="lote-selection-card lote-row">
+                <input type="radio" name="traslado_inv_sel" value="${r.id}" data-max="${r.cantidad}" data-ubicacion="${escapeHtml(r.ubicacion_codigo)}" data-lote="${escapeHtml(r.numero_lote)}">
+                <div class="flex-1">
+                    <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
+                    <div class="text-xs text-secondary">
+                        Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
+                        Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
+                    </div>
+                </div>
+                <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
+            </label>`).join('');
+
+        lista.querySelectorAll('input[name="traslado_inv_sel"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                trasladoInventarioId = radio.value;
+                trasladoMaxCantidad  = parseInt(radio.dataset.max);
+
+                document.getElementById('traslado-destino-wrapper').style.display = 'block';
+                document.getElementById('traslado-whitespace-hack')?.remove(); // Cleanup old hack
+                document.getElementById('traslado-cantidad-section').style.display = 'block';
+                document.getElementById('traslado-stock-hint').textContent = `Disponible: ${trasladoMaxCantidad} unidades.`;
+
+                lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
+                radio.closest('.lote-row').style.borderColor = 'var(--primary)';
+
+                updateFlow();
+                validateSubmit();
+            });
+        });
+
+        if (data.rows.length === 1) {
+            const radio = lista.querySelector('input[name="traslado_inv_sel"]');
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change'));
+        }
+
+        return data.rows.length;
+    } catch (e) {
+        lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
+        return 0;
+    }
+}
+
+function updateFlow() {
+    const flow = document.getElementById('traslado-flow');
+    const flowOrigenVal = document.getElementById('flow-origen-val');
+    const flowDestinoVal = document.getElementById('flow-destino-val');
+
+    flow.style.display = 'flex';
+
+    const radio = document.querySelector('input[name="traslado_inv_sel"]:checked');
+    if (radio) {
+        flowOrigenVal.innerHTML = `${radio.dataset.ubicacion} <span class="text-xs text-muted block mb-1">Lote: ${radio.dataset.lote}</span>`;
+    }
+
+    if (trasladoDestinoId) {
+        flowDestinoVal.textContent = document.getElementById('traslado-destino').value;
+    } else {
+        flowDestinoVal.textContent = '—';
+    }
+}
+
+function validateSubmit() {
+    const submitBtn = document.getElementById('traslado-submit');
+    submitBtn.disabled = !(trasladoInventarioId && trasladoDestinoId);
 }

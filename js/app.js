@@ -382,53 +382,12 @@ async function handleSalidaScan(barcode) {
             document.getElementById('salida-ubicaciones-section').style.display = 'block';
             document.getElementById('salida-ac-results').classList.remove('visible');
 
-            const lista = document.getElementById('salida-lotes-lista');
-            lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando ubicaciones...</div>';
-            
-            const resLotes = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${match.id}`);
-            const dataLotes = await resLotes.json();
-
-            if (!dataLotes.rows || !dataLotes.rows.length) {
-                lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Sin stock</h3><p>Este producto no tiene ubicaciones con stock disponible.</p></div>';
+            const cantidadFilas = await loadSalidaLotes(match.id);
+            if (!cantidadFilas) {
                 playScanSound('error');
                 showToast('Este producto no tiene stock disponible.', 'warning');
                 return;
             }
-
-            lista.innerHTML = dataLotes.rows.map(r => `
-                <label class="lote-selection-card lote-row">
-                    <input type="radio" name="inventario_sel" value="${r.id}" data-max="${r.cantidad}">
-                    <div class="flex-1">
-                        <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
-                        <div class="text-xs text-secondary">
-                            Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
-                            Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
-                        </div>
-                    </div>
-                    <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
-                </label>`).join('');
-
-            let selectedMaxCantidad = 0;
-            lista.querySelectorAll('input[name="inventario_sel"]').forEach(radio => {
-                radio.addEventListener('change', () => {
-                    document.getElementById('salida-cantidad-section').style.display = 'block';
-                    selectedMaxCantidad = parseInt(radio.dataset.max);
-                    document.getElementById('salida-stock-hint').textContent = `Disponible: ${selectedMaxCantidad} unidades.`;
-                    document.getElementById('salida-submit').disabled = false;
-                    document.getElementById('salida-cantidad').max = selectedMaxCantidad;
-                    document.getElementById('salida-cantidad').value = 1;
-                    document.getElementById('salida-cantidad')?.focus();
-                    lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
-                    radio.closest('.lote-row').style.borderColor = 'var(--primary)';
-                });
-            });
-
-            if (dataLotes.rows.length === 1) {
-                const radio = lista.querySelector('input[name="inventario_sel"]');
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change'));
-            }
-
             playScanSound('success');
             showToast(`Producto seleccionado: ${match.descripcion}`, 'success');
         } else {
@@ -465,49 +424,12 @@ async function handleTrasladoScan(barcode) {
             document.getElementById('traslado-seccion-detalles').style.display = 'block';
             document.getElementById('traslado-ac-results').classList.remove('visible');
 
-            const lista = document.getElementById('traslado-lotes-lista');
-            lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando stock...</div>';
-
-            const resLotes = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${match.id}`);
-            const dataLotes = await resLotes.json();
-
-            if (!dataLotes.rows || !dataLotes.rows.length) {
-                lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Sin stock</h3><p>Este producto no tiene ubicaciones con stock disponible.</p></div>';
+            const cantidadFilas = await loadTrasladoLotes(match.id);
+            if (!cantidadFilas) {
                 playScanSound('error');
                 showToast('Este producto no tiene stock disponible.', 'warning');
                 return;
             }
-
-            lista.innerHTML = dataLotes.rows.map(r => `
-                <label class="lote-selection-card lote-row">
-                    <input type="radio" name="inventario_sel" value="${r.id}" data-max="${r.cantidad}" data-codigo="${escapeHtml(r.ubicacion_codigo)}" data-lote="${escapeHtml(r.numero_lote)}">
-                    <div class="flex-1">
-                        <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
-                        <div class="text-xs text-secondary">
-                            Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
-                            Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
-                        </div>
-                    </div>
-                    <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
-                </label>`).join('');
-
-            lista.querySelectorAll('input[name="inventario_sel"]').forEach(radio => {
-                radio.addEventListener('change', () => {
-                    document.getElementById('traslado-destino-wrapper').style.display = 'block';
-                    document.getElementById('flow-origen-val').textContent = `${radio.dataset.codigo} (L: ${radio.dataset.lote})`;
-                    document.getElementById('traslado-flow').style.display = 'flex';
-                    document.getElementById('traslado-destino')?.focus();
-                    lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
-                    radio.closest('.lote-row').style.borderColor = 'var(--primary)';
-                });
-            });
-
-            if (dataLotes.rows.length === 1) {
-                const radio = lista.querySelector('input[name="inventario_sel"]');
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change'));
-            }
-
             playScanSound('success');
             showToast('Producto seleccionado', 'success');
         } else {

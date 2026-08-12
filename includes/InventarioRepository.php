@@ -25,6 +25,16 @@ class InventarioRepository {
     }
 
     /**
+     * Bloquea la fila del producto en la base de datos (SELECT ... FOR UPDATE).
+     */
+    public function bloquearProducto(int $productoId): bool {
+        $stmt = $this->db->prepare("SELECT id FROM productos WHERE id = ? FOR UPDATE");
+        $stmt->execute([$productoId]);
+        return (bool)$stmt->fetch();
+    }
+
+
+    /**
      * Obtiene y bloquea de forma atómica un registro de inventario origen.
      */
     public function buscarInventarioParaModificar(int $inventarioId): ?array {

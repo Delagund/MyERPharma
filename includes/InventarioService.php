@@ -131,4 +131,87 @@ class InventarioService {
             throw $e;
         }
     }
+
+    /**
+     * Ejecuta la salida múltiple de stock de un producto desde varias ubicaciones/lotes.
+     *
+     * @param int $productoId
+     * @param array<int, mixed> $operaciones
+     * @param int $usuarioId
+     * @return array{producto_id: int, resultados: array<int, array{inventario_id: int, lote_id: int, ubicacion_origen_id: int, cantidad: int, nuevo_stock: int, eliminado: bool}>}
+     */
+    public function ejecutarSalidaMultiple(int $productoId, array $operaciones, int $usuarioId): array {
+        if ($productoId <= 0) {
+            throw new InvalidArgumentException('Producto inválido.');
+        }
+
+        if (empty($operaciones)) {
+            throw new InvalidArgumentException('Debe especificar al menos una operación de salida.');
+        }
+
+        foreach ($operaciones as $op) {
+            if (!is_array($op) || ((int)($op['inventario_id'] ?? 0)) <= 0) {
+                throw new InvalidArgumentException('ID de inventario inválido.');
+            }
+            if (((int)($op['cantidad'] ?? 0)) < 1) {
+                throw new InvalidArgumentException('La cantidad debe ser mayor a 0.');
+            }
+        }
+
+        try {
+            $this->repository->iniciarTransaccion();
+
+            $existeProducto = $this->repository->bloquearProducto($productoId);
+            if (!$existeProducto) {
+                throw new DomainException('El producto especificado no existe.');
+            }
+
+            $resultados = [];
+
+            foreach ($operaciones as $op) {
+                $invId = (int)$op['inventario_id'];
+                $cantidad = (int)$op['cantidad'];
+
+                $inv = $this->repository->buscarInventarioParaModificar($invId);
+                if (!$inv) {
+                    throw new DomainException("El registro de inventario ID {$invId} no existe.");
+                }
+
+                if ((int)$inv['producto_id'] !== $productoId) {
+                    throw new DomainException("El inventario ID {$invId} no pertenece al producto seleccionado.");
+                }
+
+                if ((int)$inv['ubicacion_id'] === 1) {
+                    throw new DomainException("No se puede realizar salidas desde la ubicación EXTERIOR del sistema.");
+                }
+
+                if ($cantidad > (int)$inv['cantidad']) {
+                    throw new DomainException("Stock insuficiente en el inventario ID {$invId}. Disponible: {$inv['cantidad']} unidades.");
+                }
+
+                $nuevoStock = $this->repository->descontarStockOrigen($invId, (int)$inv['cantidad'], $cantidad);
+                $this->repository->registrarHistorial($usuarioId, $productoId, (int)$inv['lote_id'], (int)$inv['ubicacion_id'], 1, 2, $cantidad);
+
+                $resultados[] = [
+                    'inventario_id'        => $invId,
+                    'lote_id'             => (int)$inv['lote_id'],
+                    'ubicacion_origen_id' => (int)$inv['ubicacion_id'],
+                    'cantidad'            => $cantidad,
+                    'nuevo_stock'         => $nuevoStock,
+                    'eliminado'           => ($nuevoStock === 0),
+                ];
+            }
+
+            $this->repository->confirmarTransaccion();
+
+            return [
+                'producto_id' => $productoId,
+                'resultados'  => $resultados
+            ];
+
+        } catch (Exception $e) {
+            $this->repository->revertirTransaccion();
+            throw $e;
+        }
+    }
 }

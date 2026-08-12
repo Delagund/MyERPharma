@@ -25,6 +25,7 @@ $db = getDB();
 match ($action) {
     'entrada'          => actionEntrada($db),
     'salida'           => actionSalida($db),
+    'salida_multi'     => actionSalidaMultiple($db),
     'traslado'         => actionTraslado($db),
     'list'             => actionList($db),
     'stock_by_product' => actionStockByProduct($db),
@@ -140,6 +141,43 @@ function actionSalida(PDO $db): void {
     } catch (PDOException $e) {
         $db->rollBack();
         jsonError('Error al registrar salida: ' . $e->getMessage());
+    }
+}
+
+// ================================================================
+//  SALIDA MÚLTIPLE — Descontar stock de múltiples lotes/ubicaciones
+// ================================================================
+function actionSalidaMultiple(PDO $db): void {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { jsonError('Método no permitido.', 405); return; }
+    $body = jsonBody();
+
+    $producto_id = (int)($body['producto_id'] ?? 0);
+    $operaciones = is_array($body['operaciones'] ?? null) ? $body['operaciones'] : [];
+
+    if ($producto_id <= 0) { jsonError('Producto inválido.', 422); return; }
+    if (empty($operaciones)) { jsonError('Debe especificar al menos una operación de salida.', 422); return; }
+
+    $repository = new InventarioRepository($db);
+    $service    = new InventarioService($repository);
+
+    try {
+        $usuario_id = currentUser()['id'];
+
+        $res = $service->ejecutarSalidaMultiple($producto_id, $operaciones, $usuario_id);
+
+        foreach ($res['resultados'] as $r) {
+            writeKardexFailsafeLog($usuario_id, 'Salida', $res['producto_id'], $r['lote_id'], $r['ubicacion_origen_id'], 1, $r['cantidad']);
+        }
+
+        echo json_encode([
+            'ok'         => true,
+            'resultados' => $res['resultados']
+        ]);
+
+    } catch (InvalidArgumentException | DomainException $e) {
+        jsonError($e->getMessage(), 422);
+    } catch (Exception $e) {
+        jsonError('Error al registrar la salida múltiple: ' . $e->getMessage(), 500);
     }
 }
 

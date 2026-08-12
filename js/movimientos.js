@@ -279,8 +279,7 @@ function resetEntradaForm() {
 
 
 /* ---- SALIDA ---- */
-let salidaInventarioId = null;
-let salidaMaxCantidad  = 0;
+let salidaEnCurso = false;
 
 function loadSalida() {
     pageContent.innerHTML = `
@@ -314,18 +313,6 @@ function loadSalida() {
                             <div id="salida-lotes-lista" class="flex flex-col gap-2"></div>
                         </div>
 
-                        <div class="form-group" id="salida-cantidad-section" style="display:none">
-                            <label class="form-label" for="salida-cantidad">Cantidad a Descontar</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
-                                    <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                <input type="number" id="salida-cantidad" name="cantidad" class="form-input" min="1" placeholder="0" inputmode="numeric">
-                                <span class="input-suffix">unid.</span>
-                            </div>
-                            <p class="form-hint" id="salida-stock-hint"></p>
-                        </div>
-
                         <div id="salida-feedback"></div>
 
                         <div class="flex gap-3 mt-6">
@@ -351,8 +338,7 @@ function initSalidaForm() {
     const acResults    = document.getElementById('salida-ac-results');
     let debounceTimer;
 
-    salidaInventarioId = null;
-    salidaMaxCantidad  = 0;
+    salidaEnCurso = false;
 
     codigoInput?.addEventListener('input', () => {
         const q = codigoInput.value.trim();
@@ -394,32 +380,72 @@ function initSalidaForm() {
 
     document.getElementById('salida-form')?.addEventListener('submit', async e => {
         e.preventDefault();
+        if (salidaEnCurso) return;
+
         const feedback  = document.getElementById('salida-feedback');
         const submitBtn = document.getElementById('salida-submit');
-        const cantidad  = parseInt(document.getElementById('salida-cantidad').value);
 
-        if (!salidaInventarioId) { feedback.innerHTML = alertHTML('error', 'Selecciona una ubicación/lote.'); return; }
-        if (!cantidad || cantidad < 1) { feedback.innerHTML = alertHTML('error', 'Ingresa una cantidad válida.'); return; }
-        if (cantidad > salidaMaxCantidad) { feedback.innerHTML = alertHTML('error', `La cantidad no puede superar el stock disponible (${salidaMaxCantidad} unid.).`); return; }
+        const checkedCbs = Array.from(document.querySelectorAll('input[name="inv_sel"]:checked'));
+        if (!checkedCbs.length) {
+            feedback.innerHTML = alertHTML('error', 'Selecciona al menos una ubicación.');
+            return;
+        }
 
-        submitBtn.disabled = true;
+        const operaciones = [];
+        for (const cb of checkedCbs) {
+            const invId = parseInt(cb.value);
+            const max = parseInt(cb.dataset.max);
+            const cantInput = cb.closest('.lote-row')?.querySelector('.lote-cantidad');
+            const cantidad = cantInput ? parseInt(cantInput.value) : 0;
+
+            if (!cantidad || cantidad < 1 || cantidad > max) {
+                feedback.innerHTML = alertHTML('error', `La cantidad a descontar debe ser mayor a 0 y no superar el máximo disponible (${max} unid.).`);
+                if (cantInput) cantInput.focus();
+                return;
+            }
+
+            operaciones.push({ inventario_id: invId, cantidad: cantidad });
+        }
+
+        const productoIdEl = document.getElementById('salida-producto-id');
+        const productoId = productoIdEl ? parseInt(productoIdEl.value) : 0;
+
+        salidaEnCurso = true;
+        document.querySelectorAll('#salida-form input, #salida-form button').forEach(el => el.disabled = true);
+        submitBtn.textContent = `Procesando ${operaciones.length} ubicación(es)...`;
+
         try {
-            const res  = await fetch('api/inventario.php?action=salida', {
+            const res = await fetch('api/inventario.php?action=salida_multi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ inventario_id: salidaInventarioId, cantidad })
+                body: JSON.stringify({ producto_id: productoId, operaciones: operaciones })
             });
             const data = await res.json();
             if (data.ok) {
-                feedback.innerHTML = alertHTML('success', `✅ Salida registrada. ${data.eliminado ? 'La ubicación quedó sin stock y fue removida.' : `Stock restante: ${data.nuevo_stock} unidades.`}`);
+                feedback.innerHTML = alertHTML('success', `✅ Salida registrada exitosamente (${operaciones.length} ubicación(es) procesada(s)).`);
                 setTimeout(loadSalida, 2500);
             } else {
                 feedback.innerHTML = alertHTML('error', data.error ?? 'Error al registrar la salida.');
             }
         } catch (err) {
-            feedback.innerHTML = alertHTML('error', 'Error de conexión con el servidor.');
+            feedback.innerHTML = alertHTML('error', 'Error de conexión con el servidor. Verifica tu red.');
         } finally {
-            submitBtn.disabled = false;
+            salidaEnCurso = false;
+            submitBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Registrar Salida`;
+            document.querySelectorAll('#salida-form input:not(.lote-cantidad)').forEach(el => el.disabled = false);
+            document.querySelectorAll('input[name="inv_sel"]').forEach(cb => {
+                cb.disabled = false;
+                const cantInput = cb.closest('.lote-row')?.querySelector('.lote-cantidad');
+                if (cantInput) {
+                    cantInput.disabled = !cb.checked;
+                }
+            });
+            const remainingChecked = document.querySelectorAll('input[name="inv_sel"]:checked').length;
+            submitBtn.disabled = (remainingChecked === 0);
         }
     });
 }
@@ -437,37 +463,63 @@ async function loadSalidaLotes(productoId) {
         }
 
         lista.innerHTML = data.rows.map(r => `
-            <label class="lote-selection-card lote-row">
-                <input type="radio" name="inventario_sel" value="${r.id}" data-max="${r.cantidad}">
-                <div class="flex-1">
-                    <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
-                    <div class="text-xs text-secondary">
-                        Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
-                        Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
+            <label class="lote-selection-card lote-row flex items-center justify-between gap-3 p-3 border rounded mb-2">
+                <div class="flex items-center gap-3 flex-1">
+                    <input type="checkbox" name="inv_sel" value="${r.id}" data-max="${r.cantidad}">
+                    <div>
+                        <div class="font-semibold text-sm">Lote: ${escapeHtml(r.numero_lote)}</div>
+                        <div class="text-xs text-secondary">
+                            Ubicación: <strong>${escapeHtml(r.ubicacion_codigo)}</strong> — 
+                            Vence: <span class="badge badge-${expiryBadgeClass(r.fecha_vencimiento)}">${formatDate(r.fecha_vencimiento)}</span>
+                        </div>
                     </div>
                 </div>
-                <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-primary">${r.cantidad} <span class="font-normal text-xs text-muted">unid.</span></span>
+                    <input type="number" class="lote-cantidad form-input" min="1" max="${r.cantidad}" value="" placeholder="Cant." disabled style="width:90px">
+                </div>
             </label>`).join('');
 
-        lista.querySelectorAll('input[name="inventario_sel"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                salidaInventarioId = radio.value;
-                salidaMaxCantidad  = parseInt(radio.dataset.max);
-                document.getElementById('salida-cantidad-section').style.display = 'block';
-                document.getElementById('salida-stock-hint').textContent = `Disponible: ${salidaMaxCantidad} unidades.`;
-                document.getElementById('salida-submit').disabled = false;
-                document.getElementById('salida-cantidad').max = salidaMaxCantidad;
-                document.getElementById('salida-cantidad')?.focus();
+        lista.querySelectorAll('input[name="inv_sel"]').forEach(cb => {
+            const row = cb.closest('.lote-row');
+            const cantInput = row ? row.querySelector('.lote-cantidad') : null;
 
-                lista.querySelectorAll('.lote-row').forEach(l => l.style.borderColor = 'var(--border)');
-                radio.closest('.lote-row').style.borderColor = 'var(--primary)';
+            if (cantInput) {
+                cantInput.addEventListener('click', e => e.stopPropagation());
+            }
+
+            cb.addEventListener('change', () => {
+                if (cb.checked) {
+                    if (cantInput) {
+                        cantInput.disabled = false;
+                        if (!cantInput.value) {
+                            cantInput.value = 1;
+                        }
+                        cantInput.focus();
+                    }
+                    if (row) row.style.borderColor = 'var(--primary)';
+                } else {
+                    if (cantInput) {
+                        cantInput.disabled = true;
+                        cantInput.value = '';
+                    }
+                    if (row) row.style.borderColor = 'var(--border)';
+                }
+
+                const checkedCount = lista.querySelectorAll('input[name="inv_sel"]:checked').length;
+                const submitBtn = document.getElementById('salida-submit');
+                if (submitBtn) {
+                    submitBtn.disabled = (checkedCount === 0);
+                }
             });
         });
 
         if (data.rows.length === 1) {
-            const radio = lista.querySelector('input[name="inventario_sel"]');
-            radio.checked = true;
-            radio.dispatchEvent(new Event('change'));
+            const cb = lista.querySelector('input[name="inv_sel"]');
+            if (cb) {
+                cb.checked = true;
+                cb.dispatchEvent(new Event('change'));
+            }
         }
 
         return data.rows.length;

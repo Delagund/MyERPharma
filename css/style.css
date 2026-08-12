@@ -3114,10 +3114,26 @@ input[type="file"].form-input::file-selector-button:hover {
   transform: translateY(-1px);
 }
 
-.lote-selection-card input[type="radio"] {
+.lote-selection-card input[type="radio"],
+.lote-selection-card input[type="checkbox"] {
   accent-color: var(--primary);
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .lote-selection-card {
+    padding: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .lote-selection-card .lote-cantidad {
+    width: 70px !important;
+    padding: 0.35rem 0.25rem !important;
+    font-size: var(--text-xs) !important;
+  }
 }
 
 /* Micro-utilidades de Maquetación */

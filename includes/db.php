@@ -29,6 +29,11 @@ function getDB(): PDO {
     static $pdo = null;
     if ($pdo !== null) return $pdo;
 
+    if (isset($GLOBALS['MOCK_PDO']) && $GLOBALS['MOCK_PDO'] instanceof PDO) {
+        $pdo = $GLOBALS['MOCK_PDO'];
+        return $pdo;
+    }
+
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

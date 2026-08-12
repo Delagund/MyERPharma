@@ -1,5 +1,33 @@
 [
   {
+    "version": "2.7.1",
+    "fecha": "2026-08-12",
+    "titulo": "Salidas Múltiples de Stock en Lote y Optimización Responsiva Móvil",
+    "descripcion": "Esta versión introduce la funcionalidad de Salidas Múltiples de Inventario (Salida V2.0), permitiendo a los usuarios retirar stock de diversas ubicaciones o lotes de un mismo producto en una única operación agrupada. La actualización fortalece la integridad de datos mediante procesamiento atómico, mejora la experiencia de usuario con selección flexible mediante casillas de verificación e introduce una optimización responsiva avanzada para una navegación fluida en dispositivos móviles y tablets.",
+    "secciones": [
+      {
+        "categoria": "🚀 Nuevas Funcionalidades y Flujos de Trabajo",
+        "items": [
+          "**Salidas Múltiples de Inventario (Lote/Batch):** Rediseño del flujo de registro de salidas para permitir la selección de 1 o más ubicaciones de forma simultánea, especificando la cantidad individual a retirar por cada lote en un único paso."
+        ]
+      },
+      {
+        "categoria": "🛡️ Integridad y Seguridad de Datos",
+        "items": [
+          "**Procesamiento Atómico y Consistencia:** Garantía transaccional de tipo 'Todo o Nada' que revierte automáticamente cualquier intento de salida parcial si una de las ubicaciones seleccionadas presenta observaciones o stock insuficiente.",
+          "**Protección contra Duplicaciones y Accesos Simultáneos:** Bloqueo reactivo en la interfaz para evitar doble envío accidental por clic rápido y serialización de operaciones sobre el mismo producto para prevenir discrepancias de stock."
+        ]
+      },
+      {
+        "categoria": "📱 Interfaz de Usuario y Responsividad Móvil",
+        "items": [
+          "**Adaptabilidad en Pantallas Pequeñas:** Optimización de tarjetas de lote e inputs numéricos con soporte fluido para dispositivos móviles (desde 320px) y tablets, manteniendo los controles visualmente claros y fáciles de operar mediante interacción táctil.",
+          "**Auto-selección Inteligente:** Selección automática y habilitación de campos cuando el producto cuenta con una única ubicación de inventario disponible, agilizando el flujo operativo."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.6.1",
     "fecha": "2026-07-30",
     "titulo": "Corrección de Selección de Ubicación en Salida y Traslado por Enter/Escáner",

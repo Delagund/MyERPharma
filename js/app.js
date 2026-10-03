@@ -240,6 +240,10 @@ function initGlobalScannerListener() {
     let lastKeyTime = 0;
 
     window.addEventListener('keydown', e => {
+        if (e.target.closest?.('#traslado-ubicacion-form')) {
+            scannerBuffer = '';
+            return;
+        }
         if (['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) {
             return;
         }
@@ -276,6 +280,7 @@ function initGlobalScannerListener() {
 }
 
 function getActiveScanInput() {
+    if (document.activeElement?.closest('#traslado-ubicacion-form')) return null;
     if (APP_PAGE === 'entrada') return document.getElementById('entrada-codigo');
     if (APP_PAGE === 'salida') return document.getElementById('salida-codigo');
     if (APP_PAGE === 'traslado') return document.getElementById('traslado-codigo');

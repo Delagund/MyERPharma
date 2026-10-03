@@ -3031,6 +3031,16 @@ input[type="file"].form-input::file-selector-button:hover {
   width: 100%;
 }
 
+/* Tabla de revisión independiente de las tarjetas móviles del inventario. */
+.traslado-ubicacion-actions { flex-wrap: wrap; }
+.traslado-stock-scroll { overflow-x: auto; max-height: 28rem; }
+.traslado-stock-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.traslado-stock-table caption { text-align: left; padding: 0.75rem 0; }
+.traslado-stock-table th,
+.traslado-stock-table td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+.traslado-stock-table th { background: var(--surface-2); white-space: nowrap; }
+.traslado-stock-table td:last-child { text-align: right; }
+
 /* Distribución de Panel Doble (ej: Ubicaciones, Reportes) */
 .layout-split-panel {
   display: grid;

@@ -1,5 +1,36 @@
 [
   {
+    "version": "2.8.0",
+    "fecha": "2026-10-03",
+    "titulo": "Traslado Completo de Ubicación con Revisión Previa",
+    "descripcion": "Esta versión incorpora la opción de mover todos los productos y lotes de una ubicación a otra desde la página Cambio de Ubicación. El usuario selecciona origen y destino, revisa el contenido y confirma una única operación que conserva las cantidades y registra la trazabilidad de cada movimiento.",
+    "secciones": [
+      {
+        "categoria": "🚀 Nuevas Funcionalidades",
+        "items": [
+          "**Mover Ubicación Completa:** Nuevo formulario para trasladar todo el stock disponible de una ubicación a otra, incluidos los distintos productos y lotes, manteniendo el traslado individual existente.",
+          "**Revisión Previa:** Listado completo de productos, lotes, vencimientos y cantidades, con totales de registros y unidades antes de confirmar."
+        ]
+      },
+      {
+        "categoria": "🛡️ Integridad y Trazabilidad",
+        "items": [
+          "**Detección de Cambios de Stock:** Si el contenido del origen cambia después de la revisión, se rechaza la confirmación y se solicita revisar nuevamente.",
+          "**Traslado Atómico:** Inventario e historial se actualizan en una única transacción. Un fallo revierte toda la operación, evitando movimientos parciales y conservando las cantidades por lote.",
+          "**Historial y Kardex:** Registro de un movimiento por cada fila trasladada y escritura posterior en el Kardex de respaldo.",
+          "**Validaciones y Envío Seguro:** Origen y destino deben ser distintos; EXTERIOR queda excluido. Los controles se bloquean durante el envío para evitar confirmaciones duplicadas."
+        ]
+      },
+      {
+        "categoria": "🧪 Validación de la Funcionalidad",
+        "items": [
+          "**Pruebas Automatizadas:** Verificación de lógica, integración con sesión y CSRF reales, regresión, rollback y concurrencia en una base local aislada, incluyendo traslados de más de 50 registros.",
+          "**Pruebas Manuales Aprobadas:** Interfaz, botones, notificaciones, advertencias, ejecución y limpieza del formulario verificados. Abandonar la operación antes de confirmar no genera movimientos."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.7.1",
     "fecha": "2026-08-12",
     "titulo": "Salidas Múltiples de Stock en Lote y Optimización Responsiva Móvil",

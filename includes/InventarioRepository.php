@@ -14,6 +14,36 @@ class InventarioRepository {
         $this->db->beginTransaction();
     }
 
+    public function iniciarTransaccionTrasladoUbicacion(): void {
+        // El aislamiento se aplica sólo a la siguiente transacción.
+        $this->db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        $this->iniciarTransaccion();
+    }
+
+    public function bloquearUbicacion(int $ubicacionId): bool {
+        $stmt = $this->db->prepare('SELECT id FROM ubicaciones WHERE id = ? FOR UPDATE');
+        $stmt->execute([$ubicacionId]);
+        return (bool)$stmt->fetch();
+    }
+
+    public function bloquearInventarioUbicacion(int $ubicacionId): void {
+        // Bloquear también huecos y filas con cantidad cero impide inserciones durante el traslado.
+        $stmt = $this->db->prepare('SELECT id FROM inventario WHERE ubicacion_id = ? ORDER BY id FOR UPDATE');
+        $stmt->execute([$ubicacionId]);
+        $stmt->fetchAll();
+    }
+
+    public function buscarStockUbicacion(int $ubicacionId): array {
+        $stmt = $this->db->prepare('SELECT i.id, i.lote_id, i.cantidad, l.producto_id,
+                p.cod_socofar, p.descripcion, l.numero_lote, l.fecha_vencimiento
+            FROM inventario i
+            INNER JOIN lotes l ON l.id = i.lote_id
+            INNER JOIN productos p ON p.id = l.producto_id
+            WHERE i.ubicacion_id = ? AND i.cantidad > 0 ORDER BY i.id');
+        $stmt->execute([$ubicacionId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function confirmarTransaccion(): void {
         $this->db->commit();
     }

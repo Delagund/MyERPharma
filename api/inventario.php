@@ -27,6 +27,8 @@ match ($action) {
     'salida'           => actionSalida($db),
     'salida_multi'     => actionSalidaMultiple($db),
     'traslado'         => actionTraslado($db),
+    'stock_by_location' => actionStockByLocation($db),
+    'traslado_ubicacion' => actionTrasladoUbicacion($db),
     'list'             => actionList($db),
     'stock_by_product' => actionStockByProduct($db),
     'expiry_alerts'    => actionExpiryAlerts($db),
@@ -435,12 +437,50 @@ function actionTraslado(PDO $db): void {
 // ================================================================
 // HELPERS - Funciones internas de soporte
 // ================================================================
+function actionStockByLocation(PDO $db): void {
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') { jsonError('Método no permitido.', 405); return; }
+    $ubicacion_id = filter_var($_GET['ubicacion_id'] ?? null, FILTER_VALIDATE_INT);
+    try {
+        $service = new InventarioService(new InventarioRepository($db));
+        echo json_encode(['ok' => true] + $service->consultarStockUbicacion($ubicacion_id ?: 0));
+    } catch (InvalidArgumentException | DomainException $e) {
+        jsonError($e->getMessage(), 422);
+    } catch (Throwable $e) {
+        error_log('Error al consultar ubicación: ' . $e->getMessage());
+        jsonError('No se pudo consultar el contenido de la ubicación.', 500);
+    }
+}
+
+function actionTrasladoUbicacion(PDO $db): void {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { jsonError('Método no permitido.', 405); return; }
+    $body = jsonBody();
+    $origen_id = filter_var($body['ubicacion_origen_id'] ?? null, FILTER_VALIDATE_INT);
+    $destino_id = filter_var($body['ubicacion_destino_id'] ?? null, FILTER_VALIDATE_INT);
+    $hash = $body['snapshot_hash'] ?? '';
+    if (!is_string($hash)) { jsonError('Revisión de stock inválida.', 422); return; }
+    try {
+        $usuario_id = (int)currentUser()['id'];
+        $service = new InventarioService(new InventarioRepository($db));
+        $res = $service->ejecutarTrasladoUbicacion($origen_id ?: 0, $destino_id ?: 0, $hash, $usuario_id);
+        foreach ($res['movimientos'] as $movimiento) {
+            writeKardexFailsafeLog($usuario_id, 'Traslado', (int)$movimiento['producto_id'], (int)$movimiento['lote_id'], $origen_id, $destino_id, (int)$movimiento['cantidad']);
+        }
+        echo json_encode(['ok' => true, 'registros_trasladados' => $res['registros_trasladados'], 'unidades_trasladadas' => $res['unidades_trasladadas']]);
+    } catch (InvalidArgumentException | DomainException $e) {
+        jsonError($e->getMessage(), 422);
+    } catch (Throwable $e) {
+        error_log('Error al trasladar ubicación: ' . $e->getMessage());
+        jsonError('No se pudo realizar el traslado completo. Revisa el stock antes de volver a intentarlo.', 500);
+    }
+}
+
 function jsonBody(): array {
     $raw = file_get_contents('php://input');
     if (empty($raw) && getenv('MOCK_POST_BODY')) {
         $raw = getenv('MOCK_POST_BODY');
     }
-    return json_decode($raw, true) ?? [];
+    $body = json_decode($raw, true);
+    return is_array($body) ? $body : [];
 }
 
 function jsonError(string $msg, int $code = 422): void {
@@ -456,7 +496,9 @@ function jsonError(string $msg, int $code = 422): void {
 // ================================================================
 function writeKardexFailsafeLog(int $usuario_id, string $tipo, int $producto_id, int $lote_id, int $origen_id, int $destino_id, int $cantidad): void {
     try {
-        $dir = __DIR__ . '/../backups';
+        // El arnés local inyecta PDO y un directorio temporal; producción conserva su ruta.
+        $dir = (($GLOBALS['MOCK_PDO'] ?? null) instanceof PDO && defined('KARDEX_TEST_DIR'))
+            ? (string)constant('KARDEX_TEST_DIR') : __DIR__ . '/../backups';
         
         // Crear directorio de backups de forma segura (silenciando warnings por falta de permisos)
         if (!is_dir($dir)) {

@@ -624,7 +624,32 @@ function loadTraslado() {
             </div>
         </div>`;
 
+    pageContent.insertAdjacentHTML('beforeend', `
+        <section class="card card-form-container traslado-ubicacion-card mt-6" aria-labelledby="traslado-ubicacion-titulo">
+            <div class="card-header"><h2 class="card-title" id="traslado-ubicacion-titulo">Mover ubicación completa</h2></div>
+            <div class="card-body">
+                <p class="form-hint mb-4">Revisa todos los productos y lotes del origen antes de moverlos al destino.</p>
+                <form id="traslado-ubicacion-form">
+                    <div class="form-group">
+                        <label class="form-label" for="traslado-ubicacion-origen">Ubicación de origen</label>
+                        <select id="traslado-ubicacion-origen" class="form-select" required disabled><option value="">Cargando ubicaciones...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="traslado-ubicacion-destino">Ubicación de destino</label>
+                        <select id="traslado-ubicacion-destino" class="form-select" required disabled><option value="">Cargando ubicaciones...</option></select>
+                    </div>
+                    <div id="traslado-ubicacion-feedback" role="status" aria-live="polite"></div>
+                    <div id="traslado-ubicacion-revision"></div>
+                    <div class="flex gap-3 mt-6 traslado-ubicacion-actions">
+                        <button type="button" class="btn btn-secondary" id="traslado-ubicacion-revisar" disabled>Revisar contenido</button>
+                        <button type="submit" class="btn btn-primary" id="traslado-ubicacion-confirmar" disabled>Confirmar traslado completo</button>
+                        <button type="button" class="btn btn-secondary" id="traslado-ubicacion-limpiar" disabled>Limpiar</button>
+                    </div>
+                </form>
+            </div>
+        </section>`);
     initTrasladoForm();
+    initTrasladoUbicacionForm();
     document.getElementById('traslado-codigo')?.focus();
 }
 
@@ -839,4 +864,126 @@ function updateFlow() {
 function validateSubmit() {
     const submitBtn = document.getElementById('traslado-submit');
     submitBtn.disabled = !(trasladoInventarioId && trasladoDestinoId);
+}
+
+async function initTrasladoUbicacionForm() {
+    const form = document.getElementById('traslado-ubicacion-form');
+    const origen = document.getElementById('traslado-ubicacion-origen');
+    const destino = document.getElementById('traslado-ubicacion-destino');
+    const revisar = document.getElementById('traslado-ubicacion-revisar');
+    const confirmar = document.getElementById('traslado-ubicacion-confirmar');
+    const limpiar = document.getElementById('traslado-ubicacion-limpiar');
+    const revision = document.getElementById('traslado-ubicacion-revision');
+    const feedback = document.getElementById('traslado-ubicacion-feedback');
+    let snapshot = null;
+    let enCurso = false;
+
+    function actualizarControles() {
+        const valido = origen.value && destino.value && origen.value !== destino.value;
+        origen.disabled = destino.disabled = limpiar.disabled = enCurso;
+        revisar.disabled = enCurso || !valido;
+        confirmar.disabled = enCurso || !valido || !snapshot;
+        form.setAttribute('aria-busy', String(enCurso));
+        Array.from(destino.options).forEach(opt => { opt.disabled = !!opt.value && opt.value === origen.value; });
+    }
+    function invalidarRevision() {
+        snapshot = null;
+        revision.innerHTML = '';
+        feedback.innerHTML = '';
+        actualizarControles();
+    }
+    origen.addEventListener('change', () => {
+        if (origen.value === destino.value) destino.value = '';
+        invalidarRevision();
+    });
+    destino.addEventListener('change', invalidarRevision);
+    limpiar.addEventListener('click', () => { form.reset(); invalidarRevision(); origen.focus(); });
+
+    revisar.addEventListener('click', async () => {
+        if (enCurso || revisar.disabled) return;
+        invalidarRevision();
+        enCurso = true;
+        revisar.textContent = 'Consultando...';
+        actualizarControles();
+        try {
+            const res = await fetch(`api/inventario.php?action=stock_by_location&ubicacion_id=${encodeURIComponent(origen.value)}`);
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo consultar el contenido.');
+            if (!form.isConnected) return;
+            if (!data.rows.length) {
+                feedback.innerHTML = alertHTML('info', 'El origen no tiene stock para trasladar.');
+                return;
+            }
+            revision.innerHTML = renderRevisionTrasladoUbicacion(data);
+            snapshot = data.snapshot_hash;
+            feedback.innerHTML = alertHTML('info', `Se moverán ${data.total_unidades} unidades de ${origen.selectedOptions[0].textContent} a ${destino.selectedOptions[0].textContent}. Si cambia el stock, tendrás que revisarlo nuevamente.`);
+        } catch (err) {
+            feedback.innerHTML = alertHTML('error', err.message || 'Error de conexión. Vuelve a revisar el contenido.');
+        } finally {
+            enCurso = false;
+            revisar.textContent = 'Revisar contenido';
+            actualizarControles();
+        }
+    });
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (enCurso || confirmar.disabled || !snapshot) return;
+        enCurso = true;
+        actualizarControles();
+        confirmar.textContent = 'Trasladando...';
+        try {
+            const res = await fetch('api/inventario.php?action=traslado_ubicacion', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ubicacion_origen_id: Number(origen.value), ubicacion_destino_id: Number(destino.value), snapshot_hash: snapshot })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo realizar el traslado.');
+            form.reset();
+            feedback.innerHTML = alertHTML('success', `Traslado completado: ${data.unidades_trasladadas} unidades en ${data.registros_trasladados} registros.`);
+            showToast('Ubicación trasladada');
+        } catch (err) {
+            feedback.innerHTML = alertHTML('error', err.message || 'No se pudo confirmar el resultado. Revisa el stock antes de volver a intentarlo.');
+        } finally {
+            // Un resultado incierto nunca permite reenviar una revisión anterior.
+            snapshot = null;
+            revision.innerHTML = '';
+            enCurso = false;
+            confirmar.textContent = 'Confirmar traslado completo';
+            actualizarControles();
+        }
+    });
+
+    try {
+        const ubicaciones = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+            const res = await fetch(`api/ubicaciones.php?action=list&page=${page}`);
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar las ubicaciones.');
+            ubicaciones.push(...data.rows.filter(row => Number(row.id) !== 1));
+            totalPages = Number(data.total_pages);
+            page++;
+        } while (page <= totalPages);
+        if (!form.isConnected) return;
+        for (const select of [origen, destino]) {
+            select.innerHTML = '<option value="">Selecciona una ubicación</option>';
+            ubicaciones.forEach(row => select.add(new Option(`${row.codigo}${row.descripcion ? ' — ' + row.descripcion : ''}`, row.id)));
+        }
+        actualizarControles();
+    } catch (err) {
+        feedback.innerHTML = alertHTML('error', `${err.message} Recarga la página para volver a intentarlo.`);
+    }
+}
+
+function renderRevisionTrasladoUbicacion(data) {
+    return `<p class="font-semibold mb-4">${data.total_registros} registros · ${data.total_unidades} unidades</p>
+        <div class="traslado-stock-scroll" tabindex="0" role="region" aria-label="Contenido de la ubicación de origen">
+            <table class="traslado-stock-table">
+                <caption class="text-secondary">Contenido revisado para el traslado completo</caption>
+                <thead><tr><th scope="col">Producto</th><th scope="col">Lote</th><th scope="col">Vencimiento</th><th scope="col">Unidades</th></tr></thead>
+                <tbody>${data.rows.map(row => `<tr><td>${escapeHtml(row.descripcion)}<br><small>${escapeHtml(row.cod_socofar)}</small></td>
+                    <td>${escapeHtml(row.numero_lote)}</td><td>${formatDate(row.fecha_vencimiento)}</td><td>${Number(row.cantidad)}</td></tr>`).join('')}</tbody>
+            </table>
+        </div>`;
 }

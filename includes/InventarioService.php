@@ -10,6 +10,63 @@ class InventarioService {
         $this->repository = $repository;
     }
 
+    private function validarUbicacionInterna(int $ubicacionId): void {
+        if ($ubicacionId <= 0) { throw new InvalidArgumentException('Ubicación inválida.'); }
+        if ($ubicacionId === 1) { throw new DomainException('No se puede almacenar o trasladar stock en la ubicación EXTERIOR del sistema.'); }
+    }
+
+    private function resumenStockUbicacion(int $ubicacionId): array {
+        $rows = $this->repository->buscarStockUbicacion($ubicacionId);
+        $snapshot = array_map(static fn(array $row): array => [(int)$row['id'], (int)$row['lote_id'], (int)$row['cantidad']], $rows);
+        return [
+            'rows' => $rows,
+            'total_registros' => count($rows),
+            'total_unidades' => array_sum(array_column($snapshot, 2)),
+            'snapshot_hash' => hash('sha256', json_encode([$ubicacionId, $snapshot], JSON_THROW_ON_ERROR)),
+        ];
+    }
+
+    public function consultarStockUbicacion(int $ubicacionId): array {
+        $this->validarUbicacionInterna($ubicacionId);
+        if (!$this->repository->existeUbicacion($ubicacionId)) {
+            throw new DomainException('La ubicación no existe.');
+        }
+        return $this->resumenStockUbicacion($ubicacionId);
+    }
+
+    public function ejecutarTrasladoUbicacion(int $origenId, int $destinoId, string $snapshotHash, int $usuarioId): array {
+        $this->validarUbicacionInterna($origenId);
+        $this->validarUbicacionInterna($destinoId);
+        if ($origenId === $destinoId) { throw new DomainException('Origen y destino deben ser diferentes.'); }
+        if (!preg_match('/^[a-f0-9]{64}$/D', $snapshotHash)) { throw new InvalidArgumentException('Revisa el contenido antes de confirmar el traslado.'); }
+
+        try {
+            $this->repository->iniciarTransaccionTrasladoUbicacion();
+            $ubicaciones = [$origenId, $destinoId];
+            sort($ubicaciones, SORT_NUMERIC);
+            foreach ($ubicaciones as $ubicacionId) {
+                if (!$this->repository->bloquearUbicacion($ubicacionId)) { throw new DomainException('La ubicación no existe.'); }
+                $this->repository->bloquearInventarioUbicacion($ubicacionId);
+            }
+            $resumen = $this->resumenStockUbicacion($origenId);
+            if (!hash_equals($resumen['snapshot_hash'], $snapshotHash)) {
+                throw new DomainException('El stock del origen cambió. Revisa el contenido actualizado antes de confirmar nuevamente.');
+            }
+            if (!$resumen['total_registros']) { throw new DomainException('La ubicación de origen no tiene stock para trasladar.'); }
+            foreach ($resumen['rows'] as $row) {
+                $cantidad = (int)$row['cantidad'];
+                $this->repository->descontarStockOrigen((int)$row['id'], $cantidad, $cantidad);
+                $this->repository->incrementarStockDestino((int)$row['lote_id'], $destinoId, $cantidad);
+                $this->repository->registrarHistorial($usuarioId, (int)$row['producto_id'], (int)$row['lote_id'], $origenId, $destinoId, 3, $cantidad);
+            }
+            $this->repository->confirmarTransaccion();
+            return ['registros_trasladados' => $resumen['total_registros'], 'unidades_trasladadas' => $resumen['total_unidades'], 'movimientos' => $resumen['rows']];
+        } catch (Throwable $e) {
+            $this->repository->revertirTransaccion();
+            throw $e;
+        }
+    }
+
     /**
      * Ejecuta la lógica transaccional de un traslado interno entre ubicaciones.
      * Aplana las ramificaciones lógicas reduciendo drásticamente el NPath.
@@ -17,13 +74,9 @@ class InventarioService {
     public function ejecutarTraslado(int $inventarioId, int $ubicacionDestinoId, int $cantidad, int $usuarioId): array {
         // Cláusulas de Salvaguarda Iniciales (Validaciones de Parámetros)
         if ($inventarioId <= 0)        { throw new InvalidArgumentException('Registro de inventario origen inválido.'); }
-        if ($ubicacionDestinoId <= 0) { throw new InvalidArgumentException('Ubicación de destino requerida.'); }
+        $this->validarUbicacionInterna($ubicacionDestinoId);
         if ($cantidad < 1)             { throw new InvalidArgumentException('La cantidad debe ser mayor a 0.'); }
         
-        if ($ubicacionDestinoId === 1) {
-            throw new DomainException('No se puede trasladar stock a la ubicación EXTERIOR del sistema. Para retirar stock, realice una Salida.');
-        }
-
         try {
             $this->repository->iniciarTransaccion();
 
@@ -82,13 +135,9 @@ class InventarioService {
         if ($productoId <= 0)     { throw new InvalidArgumentException('Producto inválido.'); }
         if ($numeroLote === '')   { throw new InvalidArgumentException('Número de lote requerido.'); }
         if ($fechaVencimiento === '') { throw new InvalidArgumentException('Fecha de vencimiento requerida.'); }
-        if ($ubicacionId <= 0)    { throw new InvalidArgumentException('Ubicación requerida.'); }
+        $this->validarUbicacionInterna($ubicacionId);
         if ($cantidad < 1)         { throw new InvalidArgumentException('La cantidad debe ser mayor a 0.'); }
         
-        if ($ubicacionId === 1) {
-            throw new DomainException('No se puede almacenar stock directamente en la ubicación EXTERIOR del sistema.');
-        }
-
         $fechaObj = DateTime::createFromFormat('Y-m-d', $fechaVencimiento);
         if (!$fechaObj) { 
             throw new InvalidArgumentException('Formato de fecha inválido. Use YYYY-MM-DD.'); 

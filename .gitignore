@@ -3,6 +3,7 @@
 # ========================
 scratch/
 .agents/
+.opencode/
 artifacts/
 datos pruebas/
 planes de cambios/

@@ -5,6 +5,7 @@
 let prodCurrentPage = 1;
 let prodCurrentSearch = '';
 let _barcodeCount = 0;
+let _productModalGeneration = 0;
 
 async function loadProductos() {
     prodCurrentPage = 1;
@@ -128,8 +129,14 @@ function initProductosPage() {
     const newBtn    = document.getElementById('btn-new-product');
     const addBcBtn  = document.getElementById('add-barcode-btn');
 
-    function openModal() { modal.classList.add('open'); }
+    function openModal() {
+        closeModal();
+        modal.classList.add('open');
+        saveBtn.disabled = false;
+    }
     function closeModal() {
+        _productModalGeneration++;
+        saveBtn.disabled = true;
         modal.classList.remove('open');
         document.getElementById('product-form')?.reset();
         document.getElementById('product-id').value = '';
@@ -146,7 +153,10 @@ function initProductosPage() {
 
     addBcBtn?.addEventListener('click', () => addBarcodeRow());
 
-    saveBtn?.addEventListener('click', async () => {
+    async function saveProducto(event) {
+        event.preventDefault();
+        if (saveBtn.disabled || !modal.classList.contains('open')) return;
+        const generation = _productModalGeneration;
         const feedback = document.getElementById('product-feedback');
         const id   = document.getElementById('product-id').value;
         const cod  = document.getElementById('product-cod').value.trim();
@@ -163,6 +173,7 @@ function initProductosPage() {
                 body: JSON.stringify({ id, cod_socofar: cod, descripcion: desc, codigos_barra: barcodes })
             });
             const data = await res.json();
+            if (generation !== _productModalGeneration) return;
             if (data.ok) {
                 closeModal();
                 showToast('✅ Producto guardado correctamente', 'success', 2500);
@@ -171,11 +182,15 @@ function initProductosPage() {
                 feedback.innerHTML = alertHTML('error', data.error ?? 'Error al guardar.');
             }
         } catch (e) {
-            feedback.innerHTML = alertHTML('error', 'Error de conexión.');
+            if (generation === _productModalGeneration) {
+                feedback.innerHTML = alertHTML('error', 'Error de conexión.');
+            }
         } finally {
-            saveBtn.disabled = false;
+            if (generation === _productModalGeneration) saveBtn.disabled = false;
         }
-    });
+    }
+    saveBtn?.addEventListener('click', saveProducto);
+    document.getElementById('product-form')?.addEventListener('submit', saveProducto);
 
     let debounceTimer;
     document.getElementById('prod-search')?.addEventListener('input', (e) => {
@@ -224,6 +239,13 @@ async function fetchProductosPage() {
 window.editProducto = async function(id) {
     const modal = document.getElementById('product-modal');
     const barcodesList = document.getElementById('barcodes-list');
+    const saveBtn = document.getElementById('product-save-btn');
+    // La generación distingue reaperturas del mismo producto y respuestas pendientes.
+    const generation = ++_productModalGeneration;
+    const isCurrent = () => generation === _productModalGeneration
+        && modal.classList.contains('open')
+        && document.getElementById('product-id').value === String(id);
+    saveBtn.disabled = true;
 
     document.getElementById('modal-product-title').textContent = 'Editar Producto';
     document.getElementById('product-id').value = id;
@@ -238,15 +260,18 @@ window.editProducto = async function(id) {
         const res  = await fetch(`api/productos.php?action=get&id=${id}`);
         const data = await res.json();
 
-        if (!data.ok) throw new Error(data.error ?? 'Error al cargar el producto.');
+        if (!isCurrent()) return;
+        if (!res.ok || !data.ok) throw new Error(data.error ?? 'Error al cargar el producto.');
 
         document.getElementById('product-cod').value  = data.cod_socofar;
         document.getElementById('product-desc').value = data.descripcion;
 
         barcodesList.innerHTML = '';
         (data.codigos_barra ?? []).forEach(cb => addBarcodeRow(cb));
+        saveBtn.disabled = false;
 
     } catch (err) {
+        if (!isCurrent()) return;
         barcodesList.innerHTML = '';
         document.getElementById('product-feedback').innerHTML =
             alertHTML('error', err.message ?? 'Error al cargar los datos del producto.');

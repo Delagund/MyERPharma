@@ -71,9 +71,10 @@ class InventarioService {
      * Ejecuta la lógica transaccional de un traslado interno entre ubicaciones.
      * Aplana las ramificaciones lógicas reduciendo drásticamente el NPath.
      */
-    public function ejecutarTraslado(int $inventarioId, int $ubicacionDestinoId, int $cantidad, int $usuarioId): array {
+    public function ejecutarTraslado(int $inventarioId, int $ubicacionDestinoId, int $cantidad, int $usuarioId, ?int $productoId = null): array {
         // Cláusulas de Salvaguarda Iniciales (Validaciones de Parámetros)
         if ($inventarioId <= 0)        { throw new InvalidArgumentException('Registro de inventario origen inválido.'); }
+        if ($productoId !== null && $productoId <= 0) { throw new InvalidArgumentException('Producto inválido.'); }
         $this->validarUbicacionInterna($ubicacionDestinoId);
         if ($cantidad < 1)             { throw new InvalidArgumentException('La cantidad debe ser mayor a 0.'); }
         
@@ -87,6 +88,9 @@ class InventarioService {
             }
 
             // Validaciones de Estado de Negocio
+            if ($productoId !== null && (int)$origen['producto_id'] !== $productoId) {
+                throw new DomainException('El inventario seleccionado no pertenece al producto indicado.');
+            }
             if ((int)$origen['ubicacion_id'] === 1) {
                 throw new DomainException('No se puede realizar traslados desde la ubicación EXTERIOR del sistema.');
             }

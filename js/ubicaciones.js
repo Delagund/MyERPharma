@@ -88,10 +88,10 @@ function renderUbicacionesRows(rows) {
                 ${parseInt(r.id) === 1 ? `
                     <span class="text-xs text-secondary font-normal italic">Sistema</span>
                 ` : `
-                    <button class="btn btn-sm btn-secondary" onclick="editUbicacion(${r.id}, '${escapeHtml(r.codigo)}', '${escapeHtml(r.descripcion ?? '')}')" title="Editar">
+                    <button class="btn btn-sm btn-secondary" data-action="editar" title="Editar">
                         ✏️
                     </button>
-                    <button class="btn btn-sm btn-danger ml-1" onclick="deleteUbicacion(${r.id}, '${escapeHtml(r.codigo)}')" title="Eliminar">
+                    <button class="btn btn-sm btn-danger ml-1" data-action="eliminar" title="Eliminar">
                         🗑️
                     </button>
                 `}
@@ -176,7 +176,14 @@ async function fetchUbicacionesPage() {
             return;
         }
 
-        tbody.innerHTML = renderUbicacionesRows(data.rows ?? []);
+        const rows = data.rows ?? [];
+        tbody.innerHTML = renderUbicacionesRows(rows);
+        // Los datos permanecen en cierres; nunca se interpretan como código de un handler.
+        rows.forEach((row, index) => {
+            const tr = tbody.rows[index];
+            tr.querySelector('[data-action="editar"]')?.addEventListener('click', () => editUbicacion(row.id, row.codigo, row.descripcion ?? ''));
+            tr.querySelector('[data-action="eliminar"]')?.addEventListener('click', () => deleteUbicacion(row.id, row.codigo));
+        });
         
         document.getElementById('ubic-count').textContent = `Total: ${data.total ?? 0}`;
         document.getElementById('ubic-page-info').textContent = `${data.page ?? 1} / ${data.total_pages || 1}`;

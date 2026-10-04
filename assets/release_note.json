@@ -1,5 +1,28 @@
 [
   {
+    "version": "3.0.0",
+    "fecha": "2026-10-03",
+    "titulo": "Seguridad de Contenido y Selección de Registros",
+    "descripcion": "Esta versión implementa los puntos 1 a 12 del plan de mejoras: seguridad del contenido, formularios de movimientos coherentes, importación de matriz serializada e idempotencia de operaciones.",
+    "secciones": [
+      {
+        "categoria": "🛡️ Seguridad de la Interfaz",
+        "items": [
+          "**Escape Compartido:** Los caracteres especiales, incluidas las comillas simples y dobles, se codifican para conservar el texto en las plantillas HTML y sus atributos.",
+          "**Acciones de Ubicaciones:** Editar y eliminar utilizan listeners asociados al registro, sin interpolar códigos ni descripciones en código JavaScript.",
+          "**Resumen de Traslado:** Las ubicaciones y el lote se muestran como texto dentro de una estructura fija, evitando que se interpreten como HTML.",
+          "**Modal de Productos:** Las respuestas antiguas no reemplazan el producto abierto; Guardar permanece bloqueado hasta completar la carga vigente.",
+          "**Selección en Entrada:** Editar el producto o la ubicación invalida su selección. Ambas búsquedas tienen temporizadores independientes.",
+          "**Selección en Traslado:** Cambiar producto o destino descarta selecciones anteriores y cargas obsoletas. El formulario envía el producto seleccionado y el servidor verifica su correspondencia con el inventario.",
+          "**Escáner:** Entrada, Salida y Traslado comparten la selección con el autocompletado, descartan respuestas antiguas e ignoran lecturas durante un envío.",
+          "**Envíos:** Entrada, Salida y Traslado bloquean cambios durante la petición; los éxitos conservan comprobantes y las respuestas inciertas requieren una consulta nueva.",
+          "**Matriz de canjes:** Las cargas se serializan con un bloqueo de base de datos y los archivos sin filas válidas no reemplazan la matriz publicada.",
+          "**Idempotencia:** Los movimientos aceptan `operacion_id`; una repetición con el mismo contenido devuelve el resultado guardado y un contenido distinto recibe conflicto. Requiere crear `operaciones_idempotentes` mediante la migración SQL incluida."
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.8.0",
     "fecha": "2026-10-03",
     "titulo": "Traslado Completo de Ubicación con Revisión Previa",

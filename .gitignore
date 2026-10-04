@@ -52,6 +52,7 @@ entrypoint_mapper.php
 phpstan.neon
 security_analyzer.php
 verify_security.php
+nuevas modificaciones.php
 
 # ========================
 # Ignorar todos los archivos de un tipo

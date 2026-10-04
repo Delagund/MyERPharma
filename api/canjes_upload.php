@@ -31,7 +31,16 @@ if ($ext !== 'csv') {
 }
 
 $db = getDB();
+$lockName = 'myerpharma_reglas_devolucion_import';
+$lock = $db->prepare('SELECT GET_LOCK(?, 0)');
+$lock->execute([$lockName]);
+if ((int)$lock->fetchColumn() !== 1) {
+    http_response_code(409);
+    echo json_encode(['ok' => false, 'error' => 'Ya hay otra carga de matriz en curso. Intenta nuevamente más tarde.']);
+    exit;
+}
 
+$handle = null;
 try {
     // 1. Crear tabla temporal
     $db->exec("CREATE TABLE reglas_devolucion_temp LIKE reglas_devolucion");
@@ -162,6 +171,11 @@ try {
     }
 
     fclose($handle);
+    $handle = null;
+
+    if ($countInserted === 0) {
+        throw new InvalidArgumentException('El archivo no contiene registros válidos; la matriz actual se conserva.');
+    }
 
     // 3. Swap atómico de tablas
     $db->exec("RENAME TABLE reglas_devolucion TO reglas_devolucion_old, reglas_devolucion_temp TO reglas_devolucion");
@@ -175,11 +189,24 @@ try {
         'mensaje' => "Matriz actualizada correctamente. $countInserted registros procesados."
     ]);
 
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
+    try { $db->exec("DROP TABLE IF EXISTS reglas_devolucion_temp"); } catch (Throwable $ex) {}
+    http_response_code(422);
+    ob_clean();
+    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+} catch (Throwable $e) {
     // Intentar limpiar tabla temporal si falló
-    try { $db->exec("DROP TABLE IF EXISTS reglas_devolucion_temp"); } catch (Exception $ex) {}
+    try { $db->exec("DROP TABLE IF EXISTS reglas_devolucion_temp"); } catch (Throwable $ex) {}
     
     http_response_code(500);
     ob_clean();
     echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+} finally {
+    if (is_resource($handle)) fclose($handle);
+    try {
+        $release = $db->prepare('SELECT RELEASE_LOCK(?)');
+        $release->execute([$lockName]);
+    } catch (Throwable $e) {
+        error_log('No se pudo liberar el bloqueo de importación de matriz: ' . $e->getMessage());
+    }
 }

@@ -291,9 +291,14 @@ function getActiveScanInput() {
 }
 
 async function handleGlobalScan(barcode) {
+    if ((APP_PAGE === 'entrada' && document.getElementById('entrada-form')?.dataset.enviando === 'true')
+        || (APP_PAGE === 'salida' && salidaEnCurso)
+        || (APP_PAGE === 'traslado' && (trasladoEnCurso || trasladoUbicacionEnCurso))) return;
+
     const input = getActiveScanInput();
     if (!input) return;
 
+    if (APP_PAGE === 'traslado') document.getElementById('traslado-status')?.replaceChildren();
     input.value = barcode;
     input.focus();
 
@@ -311,83 +316,86 @@ async function handleGlobalScan(barcode) {
     }
 }
 
+const movimientoOperacionPendiente = new WeakMap();
+
+function obtenerOperacionId(form, payload) {
+    const contenido = JSON.stringify(payload);
+    let operacion = movimientoOperacionPendiente.get(form);
+    if (!operacion || operacion.contenido !== contenido) {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+        const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        operacion = { contenido, id };
+        movimientoOperacionPendiente.set(form, operacion);
+    }
+    return operacion.id;
+}
+
+function olvidarOperacionId(form) {
+    movimientoOperacionPendiente.delete(form);
+}
+
 async function handleEntradaScan(barcode) {
-    if (!barcode) return;
-    if (esEscaneoDuplicado(barcode)) return;
+    if (!barcode || esEscaneoDuplicado(barcode)) return;
+    const seleccion = document.getElementById('entrada-form')?.entradaSeleccion;
+    if (!seleccion) return;
+    const anteriorId = document.getElementById('entrada-producto-id').value;
+    const revision = seleccion.invalidarProducto();
 
     try {
         const res = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(barcode)}`);
         const data = await res.json();
+        if (!seleccion.productoVigente(revision)) return;
+        if (!res.ok) throw new Error('Error al buscar el producto.');
         const results = data.results ?? [];
         const exactMatch = results.find(r => r.match_type === 'exact_barcode' || r.match_type === 'exact_socofar');
         const match = exactMatch || (results.length === 1 ? results[0] : null);
 
         if (match) {
-            const currentSelectedId = document.getElementById('entrada-producto-id')?.value;
-            if (currentSelectedId && parseInt(currentSelectedId) === parseInt(match.id)) {
-                const cantInput = document.getElementById('entrada-cantidad');
-                if (cantInput) {
-                    const val = parseInt(cantInput.value) || 0;
-                    cantInput.value = val + 1;
-                    showToast(`Cantidad incrementada a ${val + 1} para ${match.descripcion}`, 'info');
-                    playScanSound('success');
-                }
-                const codigoInput = document.getElementById('entrada-codigo');
-                if (codigoInput) {
-                    codigoInput.value = '';
-                    codigoInput.focus();
-                }
-                return;
-            }
-
-            document.getElementById('entrada-producto-id').value = match.id;
-            document.getElementById('producto-nombre').textContent = match.descripcion;
-            document.getElementById('producto-info').style.display = 'block';
-            document.getElementById('entrada-ac-results').classList.remove('visible');
-
+            seleccion.seleccionarProducto(match);
             const cantInput = document.getElementById('entrada-cantidad');
-            if (cantInput && (!cantInput.value || parseInt(cantInput.value) === 0)) {
-                cantInput.value = 1;
+            if (anteriorId && String(anteriorId) === String(match.id)) {
+                const cantidad = (parseInt(cantInput.value) || 0) + 1;
+                cantInput.value = cantidad;
+                showToast(`Cantidad incrementada a ${cantidad} para ${match.descripcion}`, 'info');
+            } else {
+                if (!cantInput.value || parseInt(cantInput.value) === 0) cantInput.value = 1;
+                showToast(`Producto seleccionado: ${match.descripcion}`, 'success');
             }
-
             playScanSound('success');
-            showToast(`Producto seleccionado: ${match.descripcion}`, 'success');
             document.getElementById('entrada-lote')?.focus();
         } else {
             playScanSound('error');
             showToast('Producto no encontrado en el maestro.', 'warning');
-            document.getElementById('entrada-ac-results').classList.remove('visible');
         }
     } catch (e) {
+        if (!seleccion.productoVigente(revision)) return;
         playScanSound('error');
         showToast('Error al buscar el producto.', 'error');
     }
 }
 
 async function handleSalidaScan(barcode) {
-    if (!barcode) return;
-    if (esEscaneoDuplicado(barcode)) return;
+    if (!barcode || salidaEnCurso || esEscaneoDuplicado(barcode)) return;
+    const seleccion = document.getElementById('salida-form')?.salidaSeleccion;
+    if (!seleccion) return;
+    const revision = seleccion.invalidarProducto();
+    document.getElementById('salida-feedback')?.replaceChildren();
 
     try {
         const res = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(barcode)}`);
         const data = await res.json();
+        if (!seleccion.productoVigente(revision)) return;
+        if (!res.ok) throw new Error('Error al buscar el producto.');
         const results = data.results ?? [];
         const exactMatch = results.find(r => r.match_type === 'exact_barcode' || r.match_type === 'exact_socofar');
         const match = exactMatch || (results.length === 1 ? results[0] : null);
 
         if (match) {
-            const currentSelectedId = document.getElementById('salida-producto-id')?.value;
-            if (currentSelectedId && parseInt(currentSelectedId) === parseInt(match.id)) {
-                playScanSound('success');
-                return;
-            }
-
-            document.getElementById('salida-producto-nombre').textContent = match.descripcion;
-            document.getElementById('salida-producto-id').value = match.id;
-            document.getElementById('salida-ubicaciones-section').style.display = 'block';
-            document.getElementById('salida-ac-results').classList.remove('visible');
-
-            const cantidadFilas = await loadSalidaLotes(match.id);
+            const cantidadFilas = await seleccion.seleccionarProducto(match);
+            if (cantidadFilas === null) return;
             if (!cantidadFilas) {
                 playScanSound('error');
                 showToast('Este producto no tiene stock disponible.', 'warning');
@@ -401,35 +409,28 @@ async function handleSalidaScan(barcode) {
             document.getElementById('salida-ac-results').classList.remove('visible');
         }
     } catch (e) {
+        if (!seleccion.productoVigente(revision)) return;
         playScanSound('error');
         showToast('Error al buscar el producto.', 'error');
     }
 }
 
 async function handleTrasladoScan(barcode) {
-    if (!barcode) return;
-    if (esEscaneoDuplicado(barcode)) return;
+    if (!barcode || esEscaneoDuplicado(barcode)) return;
+    const revision = invalidarProductoTraslado();
 
     try {
         const res = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(barcode)}`);
         const data = await res.json();
+        if (!productoTrasladoVigente(revision)) return;
+        if (!res.ok) throw new Error('Error al buscar el producto.');
         const results = data.results ?? [];
         const exactMatch = results.find(r => r.match_type === 'exact_barcode' || r.match_type === 'exact_socofar');
         const match = exactMatch || (results.length === 1 ? results[0] : null);
 
         if (match) {
-            const currentSelectedId = document.getElementById('traslado-producto-id')?.value;
-            if (currentSelectedId && parseInt(currentSelectedId) === parseInt(match.id)) {
-                playScanSound('success');
-                return;
-            }
-
-            document.getElementById('traslado-producto-nombre').textContent = match.descripcion;
-            document.getElementById('traslado-producto-id').value = match.id;
-            document.getElementById('traslado-seccion-detalles').style.display = 'block';
-            document.getElementById('traslado-ac-results').classList.remove('visible');
-
-            const cantidadFilas = await loadTrasladoLotes(match.id);
+            const cantidadFilas = await seleccionarProductoTraslado(match);
+            if (cantidadFilas === null) return;
             if (!cantidadFilas) {
                 playScanSound('error');
                 showToast('Este producto no tiene stock disponible.', 'warning');
@@ -440,9 +441,9 @@ async function handleTrasladoScan(barcode) {
         } else {
             playScanSound('error');
             showToast('Producto no encontrado.', 'warning');
-            document.getElementById('traslado-ac-results').classList.remove('visible');
         }
     } catch (e) {
+        if (!productoTrasladoVigente(revision)) return;
         playScanSound('error');
         showToast('Error al buscar el producto.', 'error');
     }
@@ -515,9 +516,9 @@ function alertHTML(type, msg) {
 }
 
 function escapeHtml(str) {
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    // Válido para texto y atributos HTML entre comillas, no para código JavaScript.
+    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function showToast(msg, type = 'success', duration = 2500) {

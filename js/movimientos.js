@@ -74,7 +74,7 @@ function loadEntrada() {
                     <div id="entrada-feedback"></div>
 
                     <div class="flex gap-3 mt-6">
-                        <button type="submit" class="btn btn-success flex-1" id="entrada-submit">
+                        <button type="submit" class="btn btn-success flex-1" id="entrada-submit" disabled>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                             </svg>
@@ -100,19 +100,73 @@ function initEntradaForm() {
     const ubInput      = document.getElementById('entrada-ubicacion-text');
     const ubAcResults  = document.getElementById('entrada-ubicacion-ac-results');
     const ubId         = document.getElementById('entrada-ubicacion-id');
+    const form         = document.getElementById('entrada-form');
+    const submitBtn    = document.getElementById('entrada-submit');
+    let productoTimer;
+    let ubicacionTimer;
+    let productoRevision = 0;
+    let ubicacionRevision = 0;
+    let enviando = false;
 
-    let debounceTimer;
+    function actualizarEnvio() {
+        submitBtn.disabled = enviando || !productoId.value || !ubId.value;
+    }
+
+    function invalidarProducto() {
+        clearTimeout(productoTimer);
+        productoRevision++;
+        productoId.value = '';
+        productoNom.textContent = '';
+        productoInfo.style.display = 'none';
+        acResults.innerHTML = '';
+        acResults.classList.remove('visible');
+        actualizarEnvio();
+        return productoRevision;
+    }
+
+    function invalidarUbicacion() {
+        clearTimeout(ubicacionTimer);
+        ubicacionRevision++;
+        ubId.value = '';
+        ubAcResults.innerHTML = '';
+        ubAcResults.classList.remove('visible');
+        actualizarEnvio();
+        return ubicacionRevision;
+    }
+
+    function seleccionarProducto(producto) {
+        invalidarProducto();
+        codigoInput.value = producto.cod_socofar;
+        productoId.value = producto.id;
+        productoNom.textContent = producto.descripcion;
+        productoInfo.style.display = 'block';
+        actualizarEnvio();
+    }
+
+    // El escáner usa la misma selección y revisión que el autocompletado.
+    form.entradaSeleccion = {
+        invalidarProducto,
+        seleccionarProducto,
+        productoVigente: revision => form.isConnected && revision === productoRevision
+    };
+    form.addEventListener('reset', () => {
+        invalidarProducto();
+        invalidarUbicacion();
+    });
 
     codigoInput?.addEventListener('input', () => {
+        const revision = invalidarProducto();
         const q = codigoInput.value.trim();
-        clearTimeout(debounceTimer);
-        if (q.length < 2) { acResults.classList.remove('visible'); return; }
-        debounceTimer = setTimeout(async () => {
+        if (q.length < 2) return;
+        productoTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(q)}`);
                 const data = await res.json();
+                if (!form.entradaSeleccion.productoVigente(revision)) return;
                 renderEntradaAutocomplete(data.results ?? []);
-            } catch (e) { acResults.classList.remove('visible'); }
+            } catch (e) {
+                if (form.entradaSeleccion.productoVigente(revision)) acResults.classList.remove('visible');
+            }
         }, 300);
     });
 
@@ -127,26 +181,25 @@ function initEntradaForm() {
 
         acResults.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
-                codigoInput.value      = item.dataset.cod;
-                productoId.value       = item.dataset.id;
-                productoNom.textContent = item.dataset.desc;
-                productoInfo.style.display = 'block';
-                acResults.classList.remove('visible');
+                seleccionarProducto({ id: item.dataset.id, cod_socofar: item.dataset.cod, descripcion: item.dataset.desc });
                 document.getElementById('entrada-lote')?.focus();
             });
         });
     }
 
     ubInput?.addEventListener('input', () => {
+        const revision = invalidarUbicacion();
         const q = ubInput.value.trim();
-        clearTimeout(debounceTimer);
-        if (q.length < 1) { ubAcResults.classList.remove('visible'); return; }
-        debounceTimer = setTimeout(async () => {
+        if (q.length < 1) return;
+        ubicacionTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`api/ubicaciones.php?action=list&q=${encodeURIComponent(q)}`);
                 const data = await res.json();
+                if (!form.isConnected || revision !== ubicacionRevision) return;
                 renderUbicacionAutocomplete(data.rows ?? []);
-            } catch (e) { ubAcResults.classList.remove('visible'); }
+            } catch (e) {
+                if (form.isConnected && revision === ubicacionRevision) ubAcResults.classList.remove('visible');
+            }
         }, 300);
     });
 
@@ -161,9 +214,10 @@ function initEntradaForm() {
 
         ubAcResults.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', () => {
+                invalidarUbicacion();
                 ubInput.value      = `${item.dataset.codigo}${item.dataset.desc ? ' — ' + item.dataset.desc : ''}`;
                 ubId.value         = item.dataset.id;
-                ubAcResults.classList.remove('visible');
+                actualizarEnvio();
                 document.getElementById('entrada-cantidad')?.focus();
             });
         });
@@ -176,10 +230,10 @@ function initEntradaForm() {
         }
     });
 
-    document.getElementById('entrada-form')?.addEventListener('submit', async e => {
+    form.addEventListener('submit', async e => {
         e.preventDefault();
+        if (enviando) return;
         const feedback  = document.getElementById('entrada-feedback');
-        const submitBtn = document.getElementById('entrada-submit');
         
         if (!productoId.value) {
             feedback.innerHTML = alertHTML('error', 'Selecciona un producto válido escaneando o eligiendo del listado.');
@@ -219,19 +273,24 @@ function initEntradaForm() {
             return;
         }
 
-        submitBtn.disabled = true;
+        enviando = true;
+        form.dataset.enviando = 'true';
+        actualizarEnvio();
+        const nombreProducto = productoNom.textContent || '—';
+        const ubicacionTexto = ubInput.value || '—';
+        const controles = Array.from(form.querySelectorAll('input, select, textarea, button'))
+            .map(control => [control, control.disabled]);
+        controles.forEach(([control]) => control.disabled = true);
         feedback.innerHTML = '';
         try {
             const res  = await fetch('api/inventario.php?action=entrada', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ ...payload, operacion_id: obtenerOperacionId(form, payload) })
             });
             const data = await res.json();
-            if (data.ok) {
-                const nombreProducto = document.getElementById('producto-nombre')?.textContent ?? '—';
-                const ubicacionTexto = document.getElementById('entrada-ubicacion-text')?.value ?? '—';
-                
+            if (res.ok && data.ok) {
+                olvidarOperacionId(form);
                 feedback.innerHTML = `
                     <div class="alert alert-success">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -250,7 +309,7 @@ function initEntradaForm() {
                     </div>`;
 
                 feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                setTimeout(resetEntradaForm, 4000);
+                form.reset();
             } else {
                 feedback.innerHTML = alertHTML('error', data.error ?? 'Error al registrar la entrada.');
                 feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -259,24 +318,22 @@ function initEntradaForm() {
             feedback.innerHTML = alertHTML('error', 'Error de conexión con el servidor. Verifica tu red.');
             feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } finally {
-            submitBtn.disabled = false;
+            enviando = false;
+            delete form.dataset.enviando;
+            controles.forEach(([control, disabled]) => control.disabled = disabled);
+            actualizarEnvio();
         }
     });
 }
 
 function resetEntradaForm() {
-    document.getElementById('entrada-form')?.reset();
-    const info = document.getElementById('producto-info');
-    if (info) info.style.display = 'none';
-    const prodId = document.getElementById('entrada-producto-id');
-    if (prodId) prodId.value = '';
-    const ubId = document.getElementById('entrada-ubicacion-id');
-    if (ubId) ubId.value = '';
+    const form = document.getElementById('entrada-form');
+    if (form) olvidarOperacionId(form);
+    form?.reset();
     const feedback = document.getElementById('entrada-feedback');
-    if (feedback) feedback.innerHTML = '';
+    if (feedback) feedback.replaceChildren();
     document.getElementById('entrada-codigo')?.focus();
 }
-
 
 /* ---- SALIDA ---- */
 let salidaEnCurso = false;
@@ -337,19 +394,58 @@ function initSalidaForm() {
     const codigoInput  = document.getElementById('salida-codigo');
     const acResults    = document.getElementById('salida-ac-results');
     let debounceTimer;
+    let productoRevision = 0;
 
     salidaEnCurso = false;
+    let salidaOperacionExitosa = false;
+
+    const form = document.getElementById('salida-form');
+    const feedback = document.getElementById('salida-feedback');
+    const submitBtn = document.getElementById('salida-submit');
+
+    feedback?.addEventListener('click', event => {
+        if (event.target.closest('[data-action="nueva-salida"]')) loadSalida();
+    });
+
+    function invalidarProducto() {
+        clearTimeout(debounceTimer);
+        productoRevision++;
+        document.getElementById('salida-producto-id').value = '';
+        document.getElementById('salida-producto-nombre').textContent = '';
+        document.getElementById('salida-lotes-lista').replaceChildren();
+        document.getElementById('salida-ubicaciones-section').style.display = 'none';
+        acResults.replaceChildren();
+        acResults.classList.remove('visible');
+        return productoRevision;
+    }
+
+    function productoVigente(revision) {
+        return form.isConnected && revision === productoRevision;
+    }
+
+    async function seleccionarProducto(producto) {
+        invalidarProducto();
+        codigoInput.value = producto.cod_socofar;
+        document.getElementById('salida-producto-nombre').textContent = producto.descripcion;
+        document.getElementById('salida-producto-id').value = producto.id;
+        document.getElementById('salida-ubicaciones-section').style.display = 'block';
+        return loadSalidaLotes(producto.id, productoRevision);
+    }
+
+    form.salidaSeleccion = { invalidarProducto, productoVigente, seleccionarProducto };
 
     codigoInput?.addEventListener('input', () => {
         const q = codigoInput.value.trim();
-        clearTimeout(debounceTimer);
+        const revision = invalidarProducto();
+        feedback.replaceChildren();
         if (q.length < 2) { acResults.classList.remove('visible'); return; }
         debounceTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(q)}`);
                 const data = await res.json();
+                if (!productoVigente(revision) || !res.ok) return;
                 renderSalidaAutocomplete(data.results ?? []);
-            } catch (e) { acResults.classList.remove('visible'); }
+            } catch (e) { if (productoVigente(revision)) acResults.classList.remove('visible'); }
         }, 300);
     });
 
@@ -364,12 +460,8 @@ function initSalidaForm() {
 
         acResults.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', async () => {
-                codigoInput.value = item.dataset.cod;
-                acResults.classList.remove('visible');
-                document.getElementById('salida-producto-nombre').textContent = item.dataset.desc;
-                document.getElementById('salida-producto-id').value = item.dataset.id;
-                document.getElementById('salida-ubicaciones-section').style.display = 'block';
-                await loadSalidaLotes(item.dataset.id);
+                feedback.replaceChildren();
+                await seleccionarProducto({ id: item.dataset.id, cod_socofar: item.dataset.cod, descripcion: item.dataset.desc });
             });
         });
     }
@@ -381,9 +473,6 @@ function initSalidaForm() {
     document.getElementById('salida-form')?.addEventListener('submit', async e => {
         e.preventDefault();
         if (salidaEnCurso) return;
-
-        const feedback  = document.getElementById('salida-feedback');
-        const submitBtn = document.getElementById('salida-submit');
 
         const checkedCbs = Array.from(document.querySelectorAll('input[name="inv_sel"]:checked'));
         if (!checkedCbs.length) {
@@ -409,26 +498,47 @@ function initSalidaForm() {
 
         const productoIdEl = document.getElementById('salida-producto-id');
         const productoId = productoIdEl ? parseInt(productoIdEl.value) : 0;
+        const nombreProducto = document.getElementById('salida-producto-nombre').textContent;
+        const controles = Array.from(form.querySelectorAll('input, select, textarea, button'))
+            .map(control => [control, control.disabled]);
 
         salidaEnCurso = true;
-        document.querySelectorAll('#salida-form input, #salida-form button').forEach(el => el.disabled = true);
+        salidaOperacionExitosa = false;
+        controles.forEach(([control]) => control.disabled = true);
         submitBtn.textContent = `Procesando ${operaciones.length} ubicación(es)...`;
 
         try {
             const res = await fetch('api/inventario.php?action=salida_multi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ producto_id: productoId, operaciones: operaciones })
+                body: JSON.stringify({ producto_id: productoId, operaciones, operacion_id: obtenerOperacionId(form, { producto_id: productoId, operaciones }) })
             });
             const data = await res.json();
-            if (data.ok) {
-                feedback.innerHTML = alertHTML('success', `✅ Salida registrada exitosamente (${operaciones.length} ubicación(es) procesada(s)).`);
-                setTimeout(loadSalida, 2500);
+            if (res.ok && data.ok) {
+                salidaOperacionExitosa = true;
+                olvidarOperacionId(form);
+                document.getElementById('salida-lotes-lista').replaceChildren();
+                document.getElementById('salida-producto-id').value = '';
+                document.getElementById('salida-producto-nombre').textContent = '';
+                codigoInput.value = '';
+                acResults.replaceChildren();
+                acResults.classList.remove('visible');
+                feedback.innerHTML = `${alertHTML('success', `✅ Salida registrada para ${escapeHtml(nombreProducto)} (${operaciones.length} ubicación(es) procesada(s)).`)}<button type="button" class="btn btn-secondary mt-3" data-action="nueva-salida">Nueva salida</button>`;
+                submitBtn.disabled = true;
+                feedback.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } else {
                 feedback.innerHTML = alertHTML('error', data.error ?? 'Error al registrar la salida.');
+                if (!res.ok && res.status >= 500) throw new Error('resultado_incierto');
             }
         } catch (err) {
-            feedback.innerHTML = alertHTML('error', 'Error de conexión con el servidor. Verifica tu red.');
+            salidaOperacionExitosa = false;
+            document.getElementById('salida-lotes-lista').replaceChildren();
+            document.getElementById('salida-producto-id').value = '';
+            document.getElementById('salida-producto-nombre').textContent = '';
+            codigoInput.value = '';
+            acResults.replaceChildren();
+            acResults.classList.remove('visible');
+            feedback.innerHTML = alertHTML('error', 'No se pudo confirmar el resultado. Busca nuevamente el producto antes de intentar otra salida.');
         } finally {
             salidaEnCurso = false;
             submitBtn.innerHTML = `
@@ -436,26 +546,31 @@ function initSalidaForm() {
                     <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 Registrar Salida`;
-            document.querySelectorAll('#salida-form input:not(.lote-cantidad)').forEach(el => el.disabled = false);
-            document.querySelectorAll('input[name="inv_sel"]').forEach(cb => {
-                cb.disabled = false;
-                const cantInput = cb.closest('.lote-row')?.querySelector('.lote-cantidad');
-                if (cantInput) {
-                    cantInput.disabled = !cb.checked;
-                }
-            });
-            const remainingChecked = document.querySelectorAll('input[name="inv_sel"]:checked').length;
-            submitBtn.disabled = (remainingChecked === 0);
+            controles.forEach(([control, disabled]) => control.disabled = disabled);
+            if (salidaOperacionExitosa) {
+                submitBtn.disabled = true;
+            } else {
+                form.querySelectorAll('input[name="inv_sel"]').forEach(cb => {
+                    cb.disabled = false;
+                    const cantInput = cb.closest('.lote-row')?.querySelector('.lote-cantidad');
+                    if (cantInput) cantInput.disabled = !cb.checked;
+                });
+                submitBtn.disabled = form.querySelectorAll('input[name="inv_sel"]:checked').length === 0;
+            }
         }
     });
 }
 
-async function loadSalidaLotes(productoId) {
+async function loadSalidaLotes(productoId, revision = null) {
     const lista = document.getElementById('salida-lotes-lista');
+    if (revision !== null && !document.getElementById('salida-form')?.salidaSeleccion.productoVigente(revision)) return null;
     lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando ubicaciones...</div>';
     try {
         const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
         const data = await res.json();
+
+        if (revision !== null && !document.getElementById('salida-form')?.salidaSeleccion.productoVigente(revision)) return null;
+        if (!res.ok) throw new Error('No se pudo cargar el stock.');
 
         if (!data.rows || !data.rows.length) {
             lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Sin stock</h3><p>Este producto no tiene ubicaciones con stock disponible.</p></div>';
@@ -524,6 +639,7 @@ async function loadSalidaLotes(productoId) {
 
         return data.rows.length;
     } catch (e) {
+        if (revision !== null && !document.getElementById('salida-form')?.salidaSeleccion.productoVigente(revision)) return null;
         lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
         return 0;
     }
@@ -534,6 +650,8 @@ async function loadSalidaLotes(productoId) {
 let trasladoInventarioId = null;
 let trasladoMaxCantidad  = 0;
 let trasladoDestinoId    = null;
+let trasladoEnCurso = false;
+let trasladoUbicacionEnCurso = false;
 
 function loadTraslado() {
     pageContent.innerHTML = `
@@ -547,7 +665,7 @@ function loadTraslado() {
                     <div class="traslado-flow-indicator mb-4" id="traslado-flow" style="display:none">
                         <div class="traslado-flow-node">
                             <span class="text-xs text-muted block mb-1">ORIGEN</span>
-                            <strong id="flow-origen-val">—</strong>
+                            <strong id="flow-origen-val"><span id="flow-origen-ubicacion">—</span> <span id="flow-origen-lote" class="text-xs text-muted block mb-1"></span></strong>
                         </div>
                         <div class="traslado-flow-arrow text-primary flex-items-center">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -620,6 +738,7 @@ function loadTraslado() {
                             <button type="button" class="btn btn-secondary" onclick="loadTraslado()">Limpiar</button>
                         </div>
                     </div>
+                    <div id="traslado-status" class="mt-4" role="status" aria-live="polite"></div>
                 </form>
             </div>
         </div>`;
@@ -653,28 +772,79 @@ function loadTraslado() {
     document.getElementById('traslado-codigo')?.focus();
 }
 
+let trasladoRevision = 0;
+
+function productoTrasladoVigente(token) {
+    return token.revision === trasladoRevision && token.form === document.getElementById('traslado-form');
+}
+
+function invalidarProductoTraslado() {
+    trasladoRevision++;
+    trasladoInventarioId = null;
+    trasladoMaxCantidad = 0;
+    trasladoDestinoId = null;
+    for (const id of ['traslado-producto-id', 'traslado-destino', 'traslado-destino-id', 'traslado-cantidad']) {
+        document.getElementById(id).value = '';
+    }
+    for (const id of ['traslado-producto-nombre', 'traslado-lotes-lista', 'traslado-stock-hint', 'traslado-feedback', 'flow-origen-lote']) {
+        document.getElementById(id).textContent = '';
+    }
+    for (const id of ['traslado-seccion-detalles', 'traslado-destino-wrapper', 'traslado-cantidad-section', 'traslado-flow']) {
+        document.getElementById(id).style.display = 'none';
+    }
+    for (const id of ['traslado-ac-results', 'traslado-destino-ac-results']) {
+        document.getElementById(id).replaceChildren();
+        document.getElementById(id).classList.remove('visible');
+    }
+    document.getElementById('flow-origen-ubicacion').textContent = '—';
+    document.getElementById('flow-destino-val').textContent = '—';
+    validateSubmit();
+    return { revision: trasladoRevision, form: document.getElementById('traslado-form') };
+}
+
+async function seleccionarProductoTraslado(producto) {
+    const token = invalidarProductoTraslado();
+    document.getElementById('traslado-codigo').value = producto.cod_socofar;
+    document.getElementById('traslado-producto-nombre').textContent = producto.descripcion;
+    document.getElementById('traslado-producto-id').value = producto.id;
+    document.getElementById('traslado-seccion-detalles').style.display = 'block';
+    return loadTrasladoLotes(producto.id, token);
+}
+
 function initTrasladoForm() {
     const codigoInput   = document.getElementById('traslado-codigo');
     const acResults     = document.getElementById('traslado-ac-results');
     const destinoInput  = document.getElementById('traslado-destino');
     const destAcResults = document.getElementById('traslado-destino-ac-results');
+    const form = document.getElementById('traslado-form');
+    const status = document.getElementById('traslado-status');
     
     let debounceTimer;
+    let destinoTimer;
+    let destinoRevision = 0;
+    trasladoEnCurso = false;
+    invalidarProductoTraslado();
 
-    trasladoInventarioId = null;
-    trasladoMaxCantidad  = 0;
-    trasladoDestinoId    = null;
+    form.addEventListener('click', event => {
+        if (event.target.closest('[data-action="nuevo-traslado"]')) {
+            status.replaceChildren();
+            codigoInput.focus();
+        }
+    });
 
     codigoInput?.addEventListener('input', () => {
         const q = codigoInput.value.trim();
+        status.replaceChildren();
+        const token = invalidarProductoTraslado();
         clearTimeout(debounceTimer);
         if (q.length < 2) { acResults.classList.remove('visible'); return; }
         debounceTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`api/productos.php?action=search&q=${encodeURIComponent(q)}`);
                 const data = await res.json();
+                if (!productoTrasladoVigente(token)) return;
                 renderTrasladoProdAc(data.results ?? []);
-            } catch (e) { acResults.classList.remove('visible'); }
+            } catch (e) { if (productoTrasladoVigente(token)) acResults.classList.remove('visible'); }
         }, 300);
     });
 
@@ -689,26 +859,30 @@ function initTrasladoForm() {
 
         acResults.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('click', async () => {
-                codigoInput.value = item.dataset.cod;
-                acResults.classList.remove('visible');
-                document.getElementById('traslado-producto-nombre').textContent = item.dataset.desc;
-                document.getElementById('traslado-producto-id').value = item.dataset.id;
-                document.getElementById('traslado-seccion-detalles').style.display = 'block';
-                await loadTrasladoLotes(item.dataset.id);
+                await seleccionarProductoTraslado({ id: item.dataset.id, cod_socofar: item.dataset.cod, descripcion: item.dataset.desc });
             });
         });
     }
 
     destinoInput?.addEventListener('input', () => {
         const q = destinoInput.value.trim();
-        clearTimeout(debounceTimer);
+        const revision = ++destinoRevision;
+        const token = { revision: trasladoRevision, form: document.getElementById('traslado-form') };
+        trasladoDestinoId = null;
+        document.getElementById('traslado-destino-id').value = '';
+        destAcResults.replaceChildren();
+        destAcResults.classList.remove('visible');
+        updateFlow();
+        validateSubmit();
+        clearTimeout(destinoTimer);
         if (q.length < 1) { destAcResults.classList.remove('visible'); return; }
-        debounceTimer = setTimeout(async () => {
+        destinoTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`api/ubicaciones.php?action=list&q=${encodeURIComponent(q)}`);
                 const data = await res.json();
+                if (revision !== destinoRevision || !productoTrasladoVigente(token)) return;
                 renderTrasladoDestAc(data.rows ?? []);
-            } catch (e) { destAcResults.classList.remove('visible'); }
+            } catch (e) { if (revision === destinoRevision && productoTrasladoVigente(token)) destAcResults.classList.remove('visible'); }
         }, 300);
     });
 
@@ -725,6 +899,7 @@ function initTrasladoForm() {
             item.addEventListener('click', () => {
                 destinoInput.value = item.dataset.cod;
                 trasladoDestinoId  = item.dataset.id;
+                document.getElementById('traslado-destino-id').value = item.dataset.id;
                 destAcResults.classList.remove('visible');
                 updateFlow();
                 validateSubmit();
@@ -733,13 +908,14 @@ function initTrasladoForm() {
         });
     }
 
-    document.getElementById('traslado-form')?.addEventListener('submit', async e => {
+    form?.addEventListener('submit', async e => {
         e.preventDefault();
         const feedback = document.getElementById('traslado-feedback');
         const submitBtn = document.getElementById('traslado-submit');
         const cantidad = parseInt(document.getElementById('traslado-cantidad').value);
+        const productoId = document.getElementById('traslado-producto-id').value;
 
-        if (!trasladoInventarioId || !trasladoDestinoId) {
+        if (!productoId || !trasladoInventarioId || !trasladoDestinoId) {
             feedback.innerHTML = alertHTML('error', 'Selecciona origen y destino.');
             return;
         }
@@ -752,29 +928,44 @@ function initTrasladoForm() {
             return;
         }
 
-        submitBtn.disabled = true;
+        const payload = {
+            producto_id: productoId,
+            inventario_id: trasladoInventarioId,
+            ubicacion_destino_id: trasladoDestinoId,
+            cantidad
+        };
+        const controles = Array.from(form.querySelectorAll('input, select, textarea, button'))
+            .map(control => [control, control.disabled]);
+        trasladoEnCurso = true;
+        controles.forEach(([control]) => control.disabled = true);
+        feedback.innerHTML = '';
         try {
             const res = await fetch('api/inventario.php?action=traslado', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    inventario_id: trasladoInventarioId,
-                    ubicacion_destino_id: trasladoDestinoId,
-                    cantidad: cantidad
-                })
+                body: JSON.stringify({ ...payload, operacion_id: obtenerOperacionId(form, payload) })
             });
             const data = await res.json();
-            if (data.ok) {
-                feedback.innerHTML = alertHTML('success', '✅ Traslado realizado con éxito.');
+            if (res.ok && data.ok) {
+                olvidarOperacionId(form);
+                invalidarProductoTraslado();
+                codigoInput.value = '';
+                status.innerHTML = `${alertHTML('success', `✅ Traslado realizado con éxito: ${payload.cantidad} unidades.`)}<button type="button" class="btn btn-secondary mt-3" data-action="nuevo-traslado">Nuevo traslado</button>`;
+                status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 showToast('Traslado completado');
-                setTimeout(loadTraslado, 2000);
             } else {
                 feedback.innerHTML = alertHTML('error', data.error ?? 'Error al realizar el traslado.');
+                if (!res.ok && res.status >= 500) throw new Error('resultado_incierto');
             }
         } catch (err) {
-            feedback.innerHTML = alertHTML('error', 'Error de conexión con el servidor.');
+            invalidarProductoTraslado();
+            codigoInput.value = '';
+            status.innerHTML = `${alertHTML('error', 'No se pudo confirmar el resultado. Busca nuevamente el producto y revisa su stock antes de intentar otra vez.')}<button type="button" class="btn btn-secondary mt-3" data-action="nuevo-traslado">Consultar nuevamente</button>`;
+            status.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } finally {
-            submitBtn.disabled = false;
+            trasladoEnCurso = false;
+            controles.forEach(([control, disabled]) => control.disabled = disabled);
+            validateSubmit();
         }
     });
 
@@ -786,12 +977,15 @@ function initTrasladoForm() {
     });
 }
 
-async function loadTrasladoLotes(productoId) {
+async function loadTrasladoLotes(productoId, token = { revision: trasladoRevision, form: document.getElementById('traslado-form') }) {
     const lista = document.getElementById('traslado-lotes-lista');
     lista.innerHTML = '<div class="loading-spinner" style="padding:1rem">Buscando stock...</div>';
     try {
         const res  = await fetch(`api/inventario.php?action=stock_by_product&producto_id=${productoId}`);
         const data = await res.json();
+
+        if (!productoTrasladoVigente(token)) return null;
+        if (!res.ok || data.ok === false) throw new Error(data.error || 'No se pudo cargar el stock.');
 
         if (!data.rows || !data.rows.length) {
             lista.innerHTML = '<div class="empty-state"><h3>Sin stock</h3><p>Este producto no tiene stock disponible para trasladar.</p></div>';
@@ -815,6 +1009,9 @@ async function loadTrasladoLotes(productoId) {
             radio.addEventListener('change', () => {
                 trasladoInventarioId = radio.value;
                 trasladoMaxCantidad  = parseInt(radio.dataset.max);
+                document.getElementById('traslado-destino').value = '';
+                document.getElementById('traslado-destino').dispatchEvent(new Event('input'));
+                document.getElementById('traslado-cantidad').value = '';
 
                 document.getElementById('traslado-destino-wrapper').style.display = 'block';
                 document.getElementById('traslado-whitespace-hack')?.remove(); // Cleanup old hack
@@ -837,6 +1034,7 @@ async function loadTrasladoLotes(productoId) {
 
         return data.rows.length;
     } catch (e) {
+        if (!productoTrasladoVigente(token)) return null;
         lista.innerHTML = alertHTML('error', 'Error al cargar el stock del producto.');
         return 0;
     }
@@ -844,14 +1042,16 @@ async function loadTrasladoLotes(productoId) {
 
 function updateFlow() {
     const flow = document.getElementById('traslado-flow');
-    const flowOrigenVal = document.getElementById('flow-origen-val');
+    const flowOrigenUbicacion = document.getElementById('flow-origen-ubicacion');
+    const flowOrigenLote = document.getElementById('flow-origen-lote');
     const flowDestinoVal = document.getElementById('flow-destino-val');
 
     flow.style.display = 'flex';
 
     const radio = document.querySelector('input[name="traslado_inv_sel"]:checked');
     if (radio) {
-        flowOrigenVal.innerHTML = `${radio.dataset.ubicacion} <span class="text-xs text-muted block mb-1">Lote: ${radio.dataset.lote}</span>`;
+        flowOrigenUbicacion.textContent = radio.dataset.ubicacion;
+        flowOrigenLote.textContent = `Lote: ${radio.dataset.lote}`;
     }
 
     if (trasladoDestinoId) {
@@ -863,7 +1063,7 @@ function updateFlow() {
 
 function validateSubmit() {
     const submitBtn = document.getElementById('traslado-submit');
-    submitBtn.disabled = !(trasladoInventarioId && trasladoDestinoId);
+    submitBtn.disabled = trasladoEnCurso || !(document.getElementById('traslado-producto-id').value && trasladoInventarioId && trasladoDestinoId);
 }
 
 async function initTrasladoUbicacionForm() {
@@ -877,6 +1077,7 @@ async function initTrasladoUbicacionForm() {
     const feedback = document.getElementById('traslado-ubicacion-feedback');
     let snapshot = null;
     let enCurso = false;
+    trasladoUbicacionEnCurso = false;
 
     function actualizarControles() {
         const valido = origen.value && destino.value && origen.value !== destino.value;
@@ -929,15 +1130,18 @@ async function initTrasladoUbicacionForm() {
         e.preventDefault();
         if (enCurso || confirmar.disabled || !snapshot) return;
         enCurso = true;
+        trasladoUbicacionEnCurso = true;
         actualizarControles();
         confirmar.textContent = 'Trasladando...';
+        const payload = { ubicacion_origen_id: Number(origen.value), ubicacion_destino_id: Number(destino.value), snapshot_hash: snapshot };
         try {
             const res = await fetch('api/inventario.php?action=traslado_ubicacion', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ubicacion_origen_id: Number(origen.value), ubicacion_destino_id: Number(destino.value), snapshot_hash: snapshot })
+                body: JSON.stringify({ ...payload, operacion_id: obtenerOperacionId(form, payload) })
             });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo realizar el traslado.');
+            olvidarOperacionId(form);
             form.reset();
             feedback.innerHTML = alertHTML('success', `Traslado completado: ${data.unidades_trasladadas} unidades en ${data.registros_trasladados} registros.`);
             showToast('Ubicación trasladada');
@@ -948,6 +1152,7 @@ async function initTrasladoUbicacionForm() {
             snapshot = null;
             revision.innerHTML = '';
             enCurso = false;
+            trasladoUbicacionEnCurso = false;
             confirmar.textContent = 'Confirmar traslado completo';
             actualizarControles();
         }

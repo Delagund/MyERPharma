@@ -51,25 +51,32 @@ function actionEntrada(PDO $db): void {
     // Inicializar componentes del Monolito Modular
     $repository = new InventarioRepository($db);
     $service    = new InventarioService($repository);
+    $operacion = null;
 
     try {
-        $usuario_id = currentUser()['id'];
+        $usuario_id = (int)currentUser()['id'];
+        $operacion = iniciarOperacionIdempotente($db, $usuario_id, 'entrada', $body);
+        if ($operacion['repetida'] ?? false) { echo $operacion['respuesta_json']; return; }
 
         // Invocar la ejecución aislada de lógica de negocio
         $res = $service->ejecutarEntrada($producto_id, $numero_lote, $fecha_vencimiento, $ubicacion_id, $cantidad, $usuario_id);
 
+        $respuesta = [
+            'ok' => true,
+            'nuevo_stock' => $res['nuevo_stock'],
+            'lote_id' => $res['lote_id']
+        ];
+        completarOperacionIdempotente($db, $operacion, $respuesta);
+
         // Registrar en log inalterable en disco (Failsafe)
         writeKardexFailsafeLog($usuario_id, 'Entrada', $producto_id, $res['lote_id'], 1, $ubicacion_id, $cantidad);
-
-        echo json_encode([
-            'ok'          => true, 
-            'nuevo_stock' => $res['nuevo_stock'], 
-            'lote_id'     => $res['lote_id']
-        ]);
+        echo json_encode($respuesta);
 
     } catch (InvalidArgumentException | DomainException $e) {
+        revertirOperacionIdempotente($db);
         jsonError($e->getMessage(), 422);
     } catch (Exception $e) {
+        revertirOperacionIdempotente($db);
         jsonError('Error al registrar la entrada: ' . $e->getMessage(), 500);
     }
 }
@@ -87,8 +94,12 @@ function actionSalida(PDO $db): void {
     if (!$inventario_id) { jsonError('Registro de inventario inválido.'); return; }
     if ($cantidad < 1)   { jsonError('La cantidad debe ser mayor a 0.');  return; }
 
+    $operacion = null;
     try {
-        $db->beginTransaction();
+        $usuario_id = (int)currentUser()['id'];
+        $operacion = iniciarOperacionIdempotente($db, $usuario_id, 'salida', $body);
+        if ($operacion['repetida'] ?? false) { echo $operacion['respuesta_json']; return; }
+        if ($operacion === null) $db->beginTransaction();
 
         // Bloquear fila y obtener información asociada para el Kardex
         $stmt = $db->prepare("
@@ -123,25 +134,26 @@ function actionSalida(PDO $db): void {
 
         // Registrar en historial_movimientos (Kardex)
         // Origen: $inv['ubicacion_id'], Destino: 1 (EXTERIOR), Tipo: 2 (Salida)
-        $usuario_id = currentUser()['id'];
         $db->prepare("
             INSERT INTO historial_movimientos (usuario_id, producto_id, lote_id, ubicacion_origen_id, ubicacion_destino_id, tipo_movimiento_id, cantidad)
             VALUES (?, ?, ?, ?, 1, 2, ?)
         ")->execute([$usuario_id, $inv['producto_id'], $inv['lote_id'], $inv['ubicacion_id'], $cantidad]);
 
-        $db->commit();
+        $respuesta = [
+            'ok' => true,
+            'nuevo_stock' => $nuevo_stock,
+            'eliminado' => $eliminado,
+        ];
+        if ($operacion === null) $db->commit();
+        else completarOperacionIdempotente($db, $operacion, $respuesta);
 
         // Registrar en log inalterable en disco (Failsafe)
         writeKardexFailsafeLog($usuario_id, 'Salida', $inv['producto_id'], $inv['lote_id'], $inv['ubicacion_id'], 1, $cantidad);
 
-        echo json_encode([
-            'ok'          => true,
-            'nuevo_stock' => $nuevo_stock,
-            'eliminado'   => $eliminado,
-        ]);
+        echo json_encode($respuesta);
 
     } catch (PDOException $e) {
-        $db->rollBack();
+        revertirOperacionIdempotente($db);
         jsonError('Error al registrar salida: ' . $e->getMessage());
     }
 }
@@ -161,24 +173,29 @@ function actionSalidaMultiple(PDO $db): void {
 
     $repository = new InventarioRepository($db);
     $service    = new InventarioService($repository);
+    $operacion = null;
 
     try {
-        $usuario_id = currentUser()['id'];
+        $usuario_id = (int)currentUser()['id'];
+        $operacion = iniciarOperacionIdempotente($db, $usuario_id, 'salida_multi', $body);
+        if ($operacion['repetida'] ?? false) { echo $operacion['respuesta_json']; return; }
 
         $res = $service->ejecutarSalidaMultiple($producto_id, $operaciones, $usuario_id);
+
+        $respuesta = ['ok' => true, 'resultados' => $res['resultados']];
+        completarOperacionIdempotente($db, $operacion, $respuesta);
 
         foreach ($res['resultados'] as $r) {
             writeKardexFailsafeLog($usuario_id, 'Salida', $res['producto_id'], $r['lote_id'], $r['ubicacion_origen_id'], 1, $r['cantidad']);
         }
 
-        echo json_encode([
-            'ok'         => true,
-            'resultados' => $res['resultados']
-        ]);
+        echo json_encode($respuesta);
 
     } catch (InvalidArgumentException | DomainException $e) {
+        revertirOperacionIdempotente($db);
         jsonError($e->getMessage(), 422);
     } catch (Exception $e) {
+        revertirOperacionIdempotente($db);
         jsonError('Error al registrar la salida múltiple: ' . $e->getMessage(), 500);
     }
 }
@@ -407,28 +424,41 @@ function actionTraslado(PDO $db): void {
     $inventario_id        = (int)($body['inventario_id']        ?? 0);
     $ubicacion_destino_id = (int)($body['ubicacion_destino_id'] ?? 0);
     $cantidad             = (int)($body['cantidad']             ?? 0);
+    // Aditivo para clientes antiguos; si se envía, debe ser un ID válido.
+    $producto_id = array_key_exists('producto_id', $body)
+        ? filter_var($body['producto_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+        : null;
+    $operacion = null;
 
     try {
-        $usuario_id = currentUser()['id'];
+        if ($producto_id === false) { throw new InvalidArgumentException('Producto inválido.'); }
+        $usuario_id = (int)currentUser()['id'];
+        $operacion = iniciarOperacionIdempotente($db, $usuario_id, 'traslado', $body);
+        if ($operacion['repetida'] ?? false) { echo $operacion['respuesta_json']; return; }
 
         // Invocar la caja negra de negocio
-        $res = $service->ejecutarTraslado($inventario_id, $ubicacion_destino_id, $cantidad, $usuario_id);
+        $res = $service->ejecutarTraslado($inventario_id, $ubicacion_destino_id, $cantidad, $usuario_id, $producto_id);
+
+        $respuesta = [
+            'ok' => true,
+            'nuevo_stock_origen' => $res['nuevo_stock_origen'],
+            'nuevo_stock_destino' => $res['nuevo_stock_destino'],
+            'lote_id' => $res['lote_id']
+        ];
+        completarOperacionIdempotente($db, $operacion, $respuesta);
 
         // 6) Mantener registro en log inalterable en disco para compatibilidad total (Failsafe)
         writeKardexFailsafeLog($usuario_id, 'Traslado', $res['producto_id'], $res['lote_id'], $res['ubicacion_origen_id'], $ubicacion_destino_id, $cantidad);
 
         // Responder con el mismo contrato de salida JSON exacto que espera la SPA
-        echo json_encode([
-            'ok'                  => true,
-            'nuevo_stock_origen'  => $res['nuevo_stock_origen'],
-            'nuevo_stock_destino' => $res['nuevo_stock_destino'],
-            'lote_id'             => $res['lote_id']
-        ]);
+        echo json_encode($respuesta);
 
     } catch (InvalidArgumentException | DomainException $e) {
+        revertirOperacionIdempotente($db);
         // Capturar errores controlados de validación de negocio (HTTP 422)
         jsonError($e->getMessage(), 422);
     } catch (Exception $e) {
+        revertirOperacionIdempotente($db);
         // Capturar fallas técnicas inesperadas del motor de base de datos (HTTP 500)
         jsonError('Error interno al procesar el traslado: ' . $e->getMessage(), 500);
     }
@@ -458,17 +488,24 @@ function actionTrasladoUbicacion(PDO $db): void {
     $destino_id = filter_var($body['ubicacion_destino_id'] ?? null, FILTER_VALIDATE_INT);
     $hash = $body['snapshot_hash'] ?? '';
     if (!is_string($hash)) { jsonError('Revisión de stock inválida.', 422); return; }
+    $operacion = null;
     try {
         $usuario_id = (int)currentUser()['id'];
+        $operacion = iniciarOperacionIdempotente($db, $usuario_id, 'traslado_ubicacion', $body);
+        if ($operacion['repetida'] ?? false) { echo $operacion['respuesta_json']; return; }
         $service = new InventarioService(new InventarioRepository($db));
         $res = $service->ejecutarTrasladoUbicacion($origen_id ?: 0, $destino_id ?: 0, $hash, $usuario_id);
+        $respuesta = ['ok' => true, 'registros_trasladados' => $res['registros_trasladados'], 'unidades_trasladadas' => $res['unidades_trasladadas']];
+        completarOperacionIdempotente($db, $operacion, $respuesta);
         foreach ($res['movimientos'] as $movimiento) {
             writeKardexFailsafeLog($usuario_id, 'Traslado', (int)$movimiento['producto_id'], (int)$movimiento['lote_id'], $origen_id, $destino_id, (int)$movimiento['cantidad']);
         }
-        echo json_encode(['ok' => true, 'registros_trasladados' => $res['registros_trasladados'], 'unidades_trasladadas' => $res['unidades_trasladadas']]);
+        echo json_encode($respuesta);
     } catch (InvalidArgumentException | DomainException $e) {
+        revertirOperacionIdempotente($db);
         jsonError($e->getMessage(), 422);
     } catch (Throwable $e) {
+        revertirOperacionIdempotente($db);
         error_log('Error al trasladar ubicación: ' . $e->getMessage());
         jsonError('No se pudo realizar el traslado completo. Revisa el stock antes de volver a intentarlo.', 500);
     }
@@ -481,6 +518,72 @@ function jsonBody(): array {
     }
     $body = json_decode($raw, true);
     return is_array($body) ? $body : [];
+}
+
+function iniciarOperacionIdempotente(PDO $db, int $usuario_id, string $accion, array $body): ?array {
+    $operacion_id = $body['operacion_id'] ?? null;
+    if ($operacion_id === null) return null; // Compatibilidad para clientes antiguos.
+    if (!is_string($operacion_id) || !preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iD', $operacion_id)) {
+        jsonError('operacion_id debe ser un UUID válido.', 422);
+    }
+    $operacion_id = strtolower($operacion_id);
+
+    unset($body['operacion_id']);
+    $payload = normalizarPayloadIdempotente($body);
+    $payloadJson = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $payloadHash = hash('sha256', $payloadJson);
+
+    if ($accion === 'traslado_ubicacion') {
+        $db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    }
+    $db->beginTransaction();
+    try {
+        $stmt = $db->prepare('INSERT INTO operaciones_idempotentes (usuario_id, accion, operacion_id, payload_hash) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$usuario_id, $accion, $operacion_id, $payloadHash]);
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        if ((string)$e->getCode() !== '23000') throw $e;
+
+        $stmt = $db->prepare('SELECT payload_hash, respuesta_json FROM operaciones_idempotentes WHERE usuario_id = ? AND accion = ? AND operacion_id = ?');
+        $stmt->execute([$usuario_id, $accion, $operacion_id]);
+        $existente = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$existente) throw $e;
+        if (!hash_equals((string)$existente['payload_hash'], $payloadHash)) {
+            jsonError('operacion_id ya fue utilizado con otros datos.', 409);
+        }
+        if (!is_string($existente['respuesta_json']) || $existente['respuesta_json'] === '') {
+            jsonError('La operación ya existe sin respuesta guardada. Consulta el inventario antes de continuar.', 409);
+        }
+        return ['repetida' => true, 'respuesta_json' => $existente['respuesta_json']];
+    }
+
+    return [
+        'repetida' => false,
+        'usuario_id' => $usuario_id,
+        'accion' => $accion,
+        'operacion_id' => $operacion_id,
+        'payload_hash' => $payloadHash,
+    ];
+}
+
+function normalizarPayloadIdempotente(array $payload): array {
+    if (!array_is_list($payload)) ksort($payload, SORT_STRING);
+    foreach ($payload as $key => $value) {
+        if (is_array($value)) $payload[$key] = normalizarPayloadIdempotente($value);
+    }
+    return $payload;
+}
+
+function completarOperacionIdempotente(PDO $db, ?array $operacion, array $respuesta): void {
+    if ($operacion === null) return;
+    $json = json_encode($respuesta, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $stmt = $db->prepare('UPDATE operaciones_idempotentes SET respuesta_json = ? WHERE usuario_id = ? AND accion = ? AND operacion_id = ?');
+    $stmt->execute([$json, $operacion['usuario_id'], $operacion['accion'], $operacion['operacion_id']]);
+    $db->commit();
+}
+
+function revertirOperacionIdempotente(PDO $db): void {
+    if ($db->inTransaction()) $db->rollBack();
 }
 
 function jsonError(string $msg, int $code = 422): void {

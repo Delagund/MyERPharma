@@ -5,18 +5,22 @@
 
 class InventarioRepository {
     private PDO $db;
+    private bool $ownsTransaction = false;
 
     public function __construct(PDO $db) {
         $this->db = $db;
     }
 
     public function iniciarTransaccion(): void {
-        $this->db->beginTransaction();
+        $this->ownsTransaction = !$this->db->inTransaction();
+        if ($this->ownsTransaction) $this->db->beginTransaction();
     }
 
     public function iniciarTransaccionTrasladoUbicacion(): void {
         // El aislamiento se aplica sólo a la siguiente transacción.
-        $this->db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        if (!$this->db->inTransaction()) {
+            $this->db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        }
         $this->iniciarTransaccion();
     }
 
@@ -45,13 +49,15 @@ class InventarioRepository {
     }
 
     public function confirmarTransaccion(): void {
-        $this->db->commit();
+        if ($this->ownsTransaction && $this->db->inTransaction()) $this->db->commit();
+        $this->ownsTransaction = false;
     }
 
     public function revertirTransaccion(): void {
         if ($this->db->inTransaction()) {
             $this->db->rollBack();
         }
+        $this->ownsTransaction = false;
     }
 
     /**
